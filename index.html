@@ -215,7 +215,7 @@ function render(){
     card.append(el("h2",{text:"Познай къде сме"}),
       el("p",{text:"Пускаме те на случайно място в Street View. Оглеждаш се, разхождаш се и цъкаш на картата къде мислиш, че си. 5 рунда, до 5000 точки на рунд."}),
       full?el("p",{text:"Стаята е пълна (10 играчи)."}):el("div",{class:"row"},inp,el("button",{class:"primary",on:go,text:"Влез"})),
-      ps.length?el("p",{class:"note",text:"Вътре са: "+ps.map(p=>p.n).join(", ")}):null);
+      ps.length?el("p",{class:"note",text:"Вътре са: "+ps.map(p=>p.n).join(", ")}):"");
     if(!full&&(focused||lastView!=="join"))setTimeout(()=>inp.focus(),0);
     pano&&pano.setVisible(false);
   }
