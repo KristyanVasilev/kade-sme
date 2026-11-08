@@ -1,0 +1,38 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      # Keys live in the CONFIG_JS repo secret, not in git.
+      - name: Build site with config.js from secrets
+        env:
+          CONFIG_JS: ${{ secrets.CONFIG_JS }}
+        run: |
+          test -n "$CONFIG_JS" || { echo "CONFIG_JS secret is missing"; exit 1; }
+          mkdir _site
+          cp index.html data.json countries.json _site/
+          printf '%s\n' "$CONFIG_JS" > _site/config.js
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
