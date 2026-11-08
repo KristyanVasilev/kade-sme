@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Къде сме?</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root{
+  --bg:#121815; --fg:#e6ece8; --muted:#93a39a; --card:#1b2420; --line:#2c3833;
+  --accent:#ff7a45; --accent-fg:#1a0d06; --ok:#5cc58a;
+  --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:16px/1.4 var(--body);display:flex;flex-direction:column;overflow:hidden}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px max(16px,env(safe-area-inset-right)) 8px max(16px,env(safe-area-inset-left));border-bottom:1px solid var(--line)}
+h1{font:800 26px/1 var(--display);letter-spacing:.02em;margin:0;text-transform:uppercase}
+h1 span{color:var(--accent)}
+#round{font:700 18px/1 var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+#who{margin-left:auto;font-size:14px;color:var(--muted)}
+main{position:relative;flex:1;min-height:0}
+#sv{position:absolute;inset:0;background:#000}
+#mapwrap{position:absolute;z-index:5;right:16px;bottom:16px;width:min(340px,45vw);height:min(240px,35vh);
+  border:2px solid var(--line);border-radius:10px;overflow:hidden;transition:width .15s,height .15s;background:var(--card)}
+@media (hover:hover){#mapwrap:hover{width:min(640px,60vw);height:min(460px,60vh)}}
+#mapwrap.big,#mapwrap.full{width:calc(100% - 32px);height:calc(100% - 32px)}
+#mapwrap.full{right:0;bottom:0;width:100%;height:100%;border:0;border-radius:0}
+#map{position:absolute;inset:0}
+#mapbar{position:absolute;left:8px;right:8px;bottom:8px;display:flex;gap:8px;z-index:2}
+#mapbar button{flex:1;padding:8px 12px}
+#mapbar #grow{flex:0 0 auto}
+#players{position:absolute;z-index:4;left:16px;top:16px;background:color-mix(in srgb,var(--card) 88%,transparent);
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;max-width:220px}
+.card{position:absolute;z-index:10;left:16px;right:16px;bottom:16px;margin-inline:auto;max-width:520px;max-height:70%;overflow:auto;
+  background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;
+  box-shadow:0 6px 24px rgb(0 0 0 / .4)}
+.card.center{top:50%;bottom:auto;transform:translateY(-50%)}
+.card h2{font:800 26px/1.05 var(--display);text-transform:uppercase;letter-spacing:.03em;margin:0}
+.card p{margin:0;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input{flex:1;min-width:0;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+button,.btn{font:700 15px var(--body);padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+button:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}
+li{display:flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums}
+li .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+li .sc{font-weight:700}
+li .d{color:var(--muted);font-size:14px}
+.dot{width:12px;height:12px;border-radius:50%;flex:none;border:2px solid #fff}
+.tick{color:var(--ok);font-weight:700}
+.note{font-size:13px;color:var(--muted)}
+[hidden]{display:none!important}
+@media (max-width:600px){h1{font-size:22px}#players{display:none}
+  #mapwrap{width:calc(100% - 32px);height:38vh}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Къде <span>сме?</span></h1>
+  <div id="round"></div>
+  <div id="who"></div>
+  <button id="share" hidden>Копирай линка</button>
+</header>
+<main>
+  <div id="sv"></div>
+  <div id="players" hidden></div>
+  <div id="mapwrap" hidden>
+    <div id="map"></div>
+    <div id="mapbar">
+      <button id="grow" type="button">⤢</button>
+      <button id="lock" class="primary" type="button" disabled>Цъкни на картата</button>
+    </div>
+  </div>
+  <section class="card center" id="card"></section>
+</main>
+
+<script src="config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const ROUNDS=5, MAX=10;
+const COLORS=["#ff7a45","#4a9bff","#3fbf73","#c76bff","#f2c230","#ff5c8a","#2fd0d0","#9a8cff","#d9a066","#9ccc3c"];
+// Areas with good official Street View coverage: [latMin, latMax, lngMin, lngMax, weight]
+const REGIONS=[[36,60,-10,30,6],[30,48,-123,-75,5],[43,53,-123,-65,2],[17,30,-106,-90,1.5],[-30,-5,-55,-35,2],
+  [-40,-25,-72,-58,1.5],[31,43,130,142,2],[34,38,126,129,.7],[-38,-27,140,153,1.5],[-34,-30,115,118,.5],[-46,-35,168,178,.8],
+  [-34,-25,18,31,1.2],[8,19,98,104,1],[-8.5,-6,105,114,.8],[10,18,120,124,.7],[50,60,30,50,1.5],[37,41,27,40,1],
+  [60,70,10,30,1],[4,11,-76,-72,.5],[1,6,100,104,.5],[41,44,22,29,1]];
+
+// ---- scoring
+const rad=x=>x*Math.PI/180;
+function dist(a,b){const dLa=rad(b[0]-a[0]),dLo=rad(b[1]-a[1]);
+  const h=Math.sin(dLa/2)**2+Math.cos(rad(a[0]))*Math.cos(rad(b[0]))*Math.sin(dLo/2)**2;return 2*6371*Math.asin(Math.sqrt(h));}
+const points=d=>Math.round(5000*Math.exp(-d/1492));
+console.assert(Math.abs(dist([0,0],[0,180])-20015)<5&&points(0)===5000&&points(1492)===1839,"scoring self-check");
+
+// ---- identity + room from the link (#CODE)
+const store={get:k=>{try{return localStorage.getItem(k)}catch{return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch{}}};
+let pid=store.get("kade-pid");if(!pid){pid=Math.random().toString(36).slice(2,12);store.set("kade-pid",pid);}
+let name=store.get("kade-name")||"", joined=false;
+let code=location.hash.slice(1).toUpperCase();
+if(!/^[A-Z0-9]{4,8}$/.test(code)){code=Math.random().toString(36).slice(2,7).toUpperCase();history.replaceState(null,"","#"+code);}
+
+const $=id=>document.getElementById(id), card=$("card");
+function el(tag,attrs={},...kids){const e=document.createElement(tag);
+  for(const[k,v]of Object.entries(attrs))v==null?0:k==="on"?e.addEventListener("click",v):k==="text"?e.textContent=v:e.setAttribute(k,v);
+  e.append(...kids.filter(Boolean));return e;}
+
+if(!window.CONFIG||!CONFIG.mapsKey||!CONFIG.firebase||!CONFIG.firebase.databaseURL){
+  card.append(el("h2",{text:"Липсват ключове"}),el("p",{text:"Попълни config.js с Google Maps ключа и Firebase настройките."}));
+  throw new Error("config.js is not filled in");
+}
+
+firebase.initializeApp(CONFIG.firebase);
+const roomRef=firebase.database().ref("rooms/"+code);
+let state=null, players={}, pending=null, busy=false, gmap, pano, marks=[], lastView="";
+
+function online(){
+  return Object.entries(players).filter(([,p])=>p&&p.on&&typeof p.n==="string"&&p.n)
+    .sort((a,b)=>(a[1].t||0)-(b[1].t||0)).slice(0,MAX)
+    .map(([id,p],i)=>({id,n:p.n.slice(0,20),g:p.g,me:id===pid,c:COLORS[i%COLORS.length]}));
+}
+function guessOf(p,r){const a=state&&p.g&&p.g[state.id]?p.g[state.id][r]:null;
+  return Array.isArray(a)&&isFinite(a[0])&&isFinite(a[1])?a:null;}
+function totals(ps,upto){return ps.map(p=>{let s=0;for(let r=0;r<upto;r++){const x=guessOf(p,r);if(x)s+=points(dist(x,[state.locs[r].lat,state.locs[r].lng]))}return{...p,total:s}}).sort((a,b)=>b.total-a.total);}
+// Move the shared state only from the exact state we saw, so two clicks never skip a round.
+function advance(from,patch){roomRef.child("state").transaction(s=>s&&s.id===from.id&&s.round===from.round&&!!s.reveal===!!from.reveal?{...s,...patch}:undefined);}
+
+roomRef.child("state").on("value",s=>{state=s.val();render();});
+roomRef.child("players").on("value",s=>{players=s.val()||{};
+  const ps=online();
+  if(state&&!state.reveal&&state.round<ROUNDS&&ps.length&&ps.every(p=>guessOf(p,state.round)))advance(state,{reveal:true});
+  render();});
+
+function join(){
+  joined=true;
+  const me=roomRef.child("players/"+pid);
+  firebase.database().ref(".info/connected").on("value",s=>{if(!s.val())return;
+    me.child("on").onDisconnect().set(false);
+    me.update({n:name,on:true,t:firebase.database.ServerValue.TIMESTAMP});});
+}
+
+// ---- random places with official Street View
+async function findPlaces(){
+  const sv=new google.maps.StreetViewService(), out=[], total=REGIONS.reduce((s,r)=>s+r[4],0);
+  for(let tries=0;out.length<ROUNDS&&tries<200;tries++){
+    let w=Math.random()*total, r=REGIONS.find(x=>(w-=x[4])<0)||REGIONS[0];
+    const loc={lat:r[0]+Math.random()*(r[1]-r[0]),lng:r[2]+Math.random()*(r[3]-r[2])};
+    try{const {data}=await sv.getPanorama({location:loc,radius:50000,sources:[google.maps.StreetViewSource.GOOGLE],preference:google.maps.StreetViewPreference.NEAREST});
+      const ll=data.location.latLng;
+      if(!out.some(o=>dist([o.lat,o.lng],[ll.lat(),ll.lng()])<300))out.push({p:data.location.pano,lat:+ll.lat().toFixed(5),lng:+ll.lng().toFixed(5)});
+    }catch{}
+  }
+  if(out.length<ROUNDS)throw new Error("not enough places");
+  return out;
+}
+
+// ---- maps
+function clearMarks(){marks.forEach(m=>m.setMap?m.setMap(null):(m.map=null));marks=[];}
+function pin(ll,color,label){
+  const PE=google.maps.marker.PinElement, AM=google.maps.marker.AdvancedMarkerElement;
+  const m=new AM({map:gmap,position:{lat:ll[0],lng:ll[1]},title:label||"",
+    content:new PE({background:color,borderColor:"#fff",glyphColor:"#fff",scale:.9})});
+  marks.push(m);return m;
+}
+window.initMaps=function(){
+  pano=new google.maps.StreetViewPanorama($("sv"),{addressControl:false,showRoadLabels:false,fullscreenControl:false,
+    motionTracking:false,motionTrackingControl:false,enableCloseButton:false,panControl:false,visible:false});
+  gmap=new google.maps.Map($("map"),{center:{lat:25,lng:10},zoom:1,mapId:"DEMO_MAP_ID",streetViewControl:false,
+    mapTypeControl:false,fullscreenControl:false,clickableIcons:false,gestureHandling:"greedy",keyboardShortcuts:false});
+  gmap.addListener("click",e=>{
+    if(!state||state.reveal||state.round>=ROUNDS||!joined)return;
+    const me=online().find(p=>p.me);if(!me||guessOf(me,state.round))return;
+    pending=[+e.latLng.lat().toFixed(4),+e.latLng.lng().toFixed(4)];render();
+  });
+  render();
+};
+const s=document.createElement("script");
+s.src="https://maps.googleapis.com/maps/api/js?key="+encodeURIComponent(CONFIG.mapsKey)+"&v=weekly&libraries=marker&callback=initMaps&language=bg&loading=async";
+s.async=true;document.head.append(s);
+
+$("grow").onclick=()=>$("mapwrap").classList.toggle("big");
+$("lock").onclick=()=>{if(!pending||!state)return;
+  roomRef.child(`players/${pid}/g/${state.id}/${state.round}`).set(pending);pending=null;$("mapwrap").classList.remove("big");};
+$("share").onclick=async()=>{try{await navigator.clipboard.writeText(location.href);$("share").textContent="Копирано ✓";}
+  catch{prompt("Копирай линка:",location.href)}setTimeout(()=>$("share").textContent="Копирай линка",1500);};
+
+// ---- UI
+function playerList(ps,extra){return el("ul",{},...ps.map(p=>el("li",{},el("span",{class:"dot",style:"background:"+p.c}),
+  el("span",{class:"nm",text:p.n+(p.me?" (ти)":"")}),extra?extra(p):null)));}
+
+function render(){
+  const ps=online(), me=ps.find(p=>p.me), ready=!!gmap;
+  $("who").textContent=`Стая ${code} · ${ps.length}/${MAX}`;
+  $("share").hidden=!joined;
+  $("round").textContent=state&&state.round<ROUNDS?`Рунд ${state.round+1} / ${ROUNDS}`:state?"Финал":"";
+  const oldInp=$("name"), typed=oldInp?oldInp.value:name, focused=document.activeElement===oldInp;
+  card.replaceChildren();card.hidden=false;card.className="card center";
+  $("players").hidden=true;$("mapwrap").hidden=true;$("mapwrap").classList.remove("full");
+  let view="";
+
+  if(joined&&!me&&ps.length<MAX){
+    view="connecting";card.append(el("p",{text:"Свързване…"}));
+  }
+  else if(!joined||!me){
+    view="join";
+    const full=ps.length>=MAX;
+    const inp=el("input",{id:"name",maxlength:"20",placeholder:"Твоето име",autocomplete:"off"});inp.value=typed;
+    const go=()=>{const v=inp.value.trim();if(!v)return inp.focus();name=v;store.set("kade-name",v);join();render();};
+    inp.addEventListener("keydown",e=>e.key==="Enter"&&go());
+    card.append(el("h2",{text:"Познай къде сме"}),
+      el("p",{text:"Пускаме те на случайно място в Street View. Оглеждаш се, разхождаш се и цъкаш на картата къде мислиш, че си. 5 рунда, до 5000 точки на рунд."}),
+      full?el("p",{text:"Стаята е пълна (10 играчи)."}):el("div",{class:"row"},inp,el("button",{class:"primary",on:go,text:"Влез"})),
+      ps.length?el("p",{class:"note",text:"Вътре са: "+ps.map(p=>p.n).join(", ")}):null);
+    if(!full&&(focused||lastView!=="join"))setTimeout(()=>inp.focus(),0);
+    pano&&pano.setVisible(false);
+  }
+  else if(!state||state.round>=ROUNDS){
+    view="lobby"+(state?state.id:0);
+    pano&&pano.setVisible(false);
+    if(state){
+      const t=totals(ps,ROUNDS);
+      card.append(el("h2",{text:t[0]?`🏆 ${t[0].n} печели!`:"Край"}),
+        el("ul",{},...t.map((p,i)=>el("li",{},el("span",{class:"d",text:i+1+"."}),el("span",{class:"dot",style:"background:"+p.c}),
+          el("span",{class:"nm",text:p.n+(p.me?" (ти)":"")}),el("span",{class:"sc",text:p.total.toLocaleString("bg")})))));
+    }else card.append(el("h2",{text:"Чакалня"}),
+      el("p",{text:"Прати линка на приятелите си. Когато всички влязат, някой натиска „Започни“."}),playerList(ps));
+    const start=el("button",{class:"primary",disabled:busy||!ready?"":null,text:busy?"Търся места…":state?"Нова игра":"Започни игра",
+      on:async()=>{busy=true;render();
+        try{const locs=await findPlaces();await roomRef.child("state").set({id:Date.now(),round:0,reveal:false,locs});}
+        catch{alert("Не успях да намеря места. Опитай пак.");}
+        busy=false;render();}});
+    card.append(el("div",{class:"row"},start,el("button",{text:"Копирай линка",on:()=>$("share").click()})));
+  }
+  else if(!state.reveal){
+    view="guess"+state.id+"-"+state.round;
+    const loc=state.locs[state.round], mine=guessOf(me,state.round);
+    card.hidden=true;
+    $("mapwrap").hidden=false;$("players").hidden=false;
+    $("players").replaceChildren(playerList(ps,p=>guessOf(p,state.round)?el("span",{class:"tick",text:"✓"}):el("span",{class:"d",text:"…"})),
+      el("button",{style:"margin-top:8px;width:100%",text:"Покажи резултата",on:()=>advance(state,{reveal:true})}));
+    if(ready&&view!==lastView){
+      pano.setPano(loc.p);pano.setPov({heading:Math.floor(Math.random()*360),pitch:0});pano.setZoom(0);pano.setVisible(true);
+      gmap.setCenter({lat:25,lng:10});gmap.setZoom(1);pending=null;
+    }
+    if(ready){clearMarks();const x=mine||pending;if(x)pin(x,me.c);}
+    $("lock").disabled=!pending||!!mine;
+    $("lock").textContent=mine?"✓ Чакаме другите":pending?"Познай тук":"Цъкни на картата";
+  }
+  else{
+    view="reveal"+state.id+"-"+state.round;
+    const loc=state.locs[state.round], truth=[loc.lat,loc.lng];
+    $("mapwrap").hidden=false;$("mapwrap").classList.add("full");card.className="card";
+    const rows=ps.map(p=>{const x=guessOf(p,state.round);const d=x?dist(x,truth):null;return{...p,x,d,pt:x?points(d):0}}).sort((a,b)=>b.pt-a.pt);
+    if(ready){
+      clearMarks();
+      const b=new google.maps.LatLngBounds();b.extend({lat:truth[0],lng:truth[1]});
+      pin(truth,"#111","Тук беше");
+      rows.forEach(p=>{if(!p.x)return;pin(p.x,p.c,p.n);b.extend({lat:p.x[0],lng:p.x[1]});
+        marks.push(new google.maps.Polyline({map:gmap,path:[{lat:p.x[0],lng:p.x[1]},{lat:truth[0],lng:truth[1]}],geodesic:true,strokeColor:p.c,strokeWeight:2}));});
+      if(view!==lastView)setTimeout(()=>gmap.fitBounds(b,60),50);
+    }
+    const t=totals(ps,state.round+1);
+    card.append(el("h2",{text:`Рунд ${state.round+1}`}),
+      el("ul",{},...rows.map(p=>el("li",{},el("span",{class:"dot",style:"background:"+p.c}),el("span",{class:"nm",text:p.n+(p.me?" (ти)":"")}),
+        el("span",{class:"d",text:p.d==null?"не позна":Math.round(p.d).toLocaleString("bg")+" км"}),el("span",{class:"sc",text:"+"+p.pt})))),
+      el("p",{class:"note",text:"Общо: "+t.map(p=>`${p.n} ${p.total.toLocaleString("bg")}`).join(" · ")}),
+      el("div",{class:"row"},
+        el("button",{class:"primary",text:state.round+1<ROUNDS?"Следващ рунд":"Към финала",on:()=>advance(state,{round:state.round+1,reveal:false})}),
+        el("a",{class:"btn",href:`https://www.google.com/maps/@?api=1&map_action=pano&pano=${encodeURIComponent(loc.p)}`,target:"_blank",rel:"noopener",text:"Виж в Google Maps ↗"})));
+  }
+  lastView=view;
+}
+render();
+</script>
+</body>
+</html>

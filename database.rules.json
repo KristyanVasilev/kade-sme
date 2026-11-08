@@ -1,0 +1,17 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "rooms": {
+      "$room": {
+        ".read": true,
+        ".write": true,
+        "players": {
+          "$pid": {
+            "n": { ".validate": "newData.isString() && newData.val().length <= 20" }
+          }
+        }
+      }
+    }
+  }
+}
