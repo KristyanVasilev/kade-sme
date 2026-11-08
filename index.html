@@ -8,7 +8,7 @@
 <style>
 :root{
   --bg:#121815; --fg:#e6ece8; --muted:#93a39a; --card:#1b2420; --line:#2c3833;
-  --accent:#ff7a45; --accent-fg:#1a0d06; --ok:#5cc58a;
+  --accent:#ff7a45; --accent-fg:#1a0d06; --ok:#5cc58a; --warn:#f2c230; --bad:#ff5c5c;
   --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
   --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
   color-scheme:dark;
@@ -20,6 +20,8 @@ header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px max(1
 h1{font:800 26px/1 var(--display);letter-spacing:.02em;margin:0;text-transform:uppercase}
 h1 span{color:var(--accent)}
 #round{font:700 18px/1 var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+#timer{font:800 24px/1 var(--display);font-variant-numeric:tabular-nums;letter-spacing:.04em}
+#timer.low{color:var(--accent)}
 #who{margin-left:auto;font-size:14px;color:var(--muted)}
 main{position:relative;flex:1;min-height:0}
 #sv{position:absolute;inset:0;background:#000}
@@ -32,12 +34,14 @@ main{position:relative;flex:1;min-height:0}
 #mapbar{position:absolute;left:8px;right:8px;bottom:8px;display:flex;gap:8px;z-index:2}
 #mapbar button{flex:1;padding:8px 12px}
 #mapbar #grow{flex:0 0 auto}
-#players{position:absolute;z-index:4;left:16px;top:16px;background:color-mix(in srgb,var(--card) 88%,transparent);
-  border:1px solid var(--line);border-radius:10px;padding:10px 12px;max-width:220px}
+#players{position:absolute;z-index:6;left:16px;top:16px;background:color-mix(in srgb,var(--card) 90%,transparent);
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:240px;max-width:calc(100% - 32px)}
+#players .lbl{display:block;margin-bottom:6px}
 .card{position:absolute;z-index:10;left:16px;right:16px;bottom:16px;margin-inline:auto;max-width:520px;max-height:70%;overflow:auto;
-  background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;
+  background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:14px;
   box-shadow:0 6px 24px rgb(0 0 0 / .4)}
-.card.center{top:50%;bottom:auto;transform:translateY(-50%)}
+.card.center{top:50%;bottom:auto;transform:translateY(-50%);max-height:calc(100% - 32px)}
+.card.wide{max-width:680px}
 .card h2{font:800 26px/1.05 var(--display);text-transform:uppercase;letter-spacing:.03em;margin:0}
 .card p{margin:0;color:var(--muted)}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -46,23 +50,46 @@ button,.btn{font:700 15px var(--body);padding:10px 16px;border-radius:8px;border
 button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 button:disabled{opacity:.45;cursor:not-allowed}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}
+ul,ol{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}
 li{display:flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums}
 li .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 li .sc{font-weight:700}
 li .d{color:var(--muted);font-size:14px}
+li .pos{color:var(--muted);font-size:14px;width:1.6em}
 .dot{width:12px;height:12px;border-radius:50%;flex:none;border:2px solid #fff}
 .tick{color:var(--ok);font-weight:700}
 .note{font-size:13px;color:var(--muted)}
+.lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.field{display:flex;flex-direction:column;gap:6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:6px 12px;font-size:14px;border-radius:999px;font-weight:400}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:700}
+#ctry{max-height:150px;overflow:auto;padding:2px}
+.settings{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.settings .span{grid-column:1/-1}
+.usage{display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;align-items:center;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.meter{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.meter>i{display:block;height:100%;background:var(--ok)}
+.meter.warn>i{background:var(--warn)}.meter.bad>i{background:var(--bad)}
+dialog{background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:12px;padding:20px;max-width:min(440px,calc(100% - 32px))}
+dialog::backdrop{background:rgb(0 0 0 / .6)}
+dialog h2{font:800 24px/1.1 var(--display);text-transform:uppercase;margin:0 0 10px}
+dialog p{margin:0 0 16px;color:var(--muted)}
 [hidden]{display:none!important}
-@media (max-width:600px){h1{font-size:22px}#players{display:none}
-  #mapwrap{width:calc(100% - 32px);height:38vh}}
+@media (max-width:600px){
+  h1{font-size:22px}
+  #mapwrap{width:calc(100% - 32px);height:38vh}
+  #players{width:210px;padding:8px 10px;font-size:13px}
+  #players li{gap:6px}
+  .settings{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
 <header>
   <h1>Къде <span>сме?</span></h1>
   <div id="round"></div>
+  <div id="timer" aria-live="off"></div>
   <div id="who"></div>
   <button id="share" hidden>Копирай линка</button>
 </header>
@@ -72,31 +99,55 @@ li .d{color:var(--muted);font-size:14px}
   <div id="mapwrap" hidden>
     <div id="map"></div>
     <div id="mapbar">
-      <button id="grow" type="button">⤢</button>
+      <button id="grow" type="button" aria-label="Уголеми картата">⤢</button>
       <button id="lock" class="primary" type="button" disabled>Цъкни на картата</button>
     </div>
   </div>
   <section class="card center" id="card"></section>
 </main>
+<dialog id="modal"><h2 id="mTitle"></h2><p id="mText"></p><form method="dialog"><button class="primary" autofocus>Разбрах</button></form></dialog>
 
 <script src="config.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 <script>
-const ROUNDS=5, MAX=10;
+const MAX=10, ROUND_OPTS=[5,10], TIMERS=[30,60,120,300];
 const COLORS=["#ff7a45","#4a9bff","#3fbf73","#c76bff","#f2c230","#ff5c8a","#2fd0d0","#9a8cff","#d9a066","#9ccc3c"];
-// Areas with good official Street View coverage: [latMin, latMax, lngMin, lngMax, weight]
-const REGIONS=[[36,60,-10,30,6],[30,48,-123,-75,5],[43,53,-123,-65,2],[17,30,-106,-90,1.5],[-30,-5,-55,-35,2],
-  [-40,-25,-72,-58,1.5],[31,43,130,142,2],[34,38,126,129,.7],[-38,-27,140,153,1.5],[-34,-30,115,118,.5],[-46,-35,168,178,.8],
-  [-34,-25,18,31,1.2],[8,19,98,104,1],[-8.5,-6,105,114,.8],[10,18,120,124,.7],[50,60,30,50,1.5],[37,41,27,40,1],
-  [60,70,10,30,1],[4,11,-76,-72,.5],[1,6,100,104,.5],[41,44,22,29,1]];
+const CONT={eu:"Европа",as:"Азия",af:"Африка",na:"Северна Америка",sa:"Южна Америка",oc:"Океания"};
+// Countries with official Street View coverage: [ISO numeric, name, continent]
+const COUNTRIES=[["008","Албания","eu"],["040","Австрия","eu"],["056","Белгия","eu"],["100","България","eu"],["191","Хърватия","eu"],["203","Чехия","eu"],
+  ["208","Дания","eu"],["233","Естония","eu"],["246","Финландия","eu"],["250","Франция","eu"],["276","Германия","eu"],["300","Гърция","eu"],["348","Унгария","eu"],
+  ["352","Исландия","eu"],["372","Ирландия","eu"],["380","Италия","eu"],["428","Латвия","eu"],["440","Литва","eu"],["442","Люксембург","eu"],["499","Черна гора","eu"],
+  ["528","Нидерландия","eu"],["807","Северна Македония","eu"],["578","Норвегия","eu"],["616","Полша","eu"],["620","Португалия","eu"],["642","Румъния","eu"],
+  ["688","Сърбия","eu"],["703","Словакия","eu"],["705","Словения","eu"],["724","Испания","eu"],["752","Швеция","eu"],["756","Швейцария","eu"],["804","Украйна","eu"],
+  ["826","Великобритания","eu"],["643","Русия","eu"],["792","Турция","eu"],
+  ["392","Япония","as"],["410","Южна Корея","as"],["158","Тайван","as"],["764","Тайланд","as"],["458","Малайзия","as"],["360","Индонезия","as"],["608","Филипини","as"],
+  ["116","Камбоджа","as"],["418","Лаос","as"],["356","Индия","as"],["144","Шри Ланка","as"],["050","Бангладеш","as"],["064","Бутан","as"],["496","Монголия","as"],
+  ["398","Казахстан","as"],["417","Киргизстан","as"],["376","Израел","as"],["400","Йордания","as"],["784","ОАЕ","as"],["634","Катар","as"],["422","Ливан","as"],
+  ["710","ЮАР","af"],["072","Ботсвана","af"],["426","Лесото","af"],["748","Есватини","af"],["516","Намибия","af"],["404","Кения","af"],["800","Уганда","af"],
+  ["646","Руанда","af"],["686","Сенегал","af"],["288","Гана","af"],["566","Нигерия","af"],["788","Тунис","af"],["450","Мадагаскар","af"],
+  ["840","САЩ","na"],["124","Канада","na"],["484","Мексико","na"],["320","Гватемала","na"],["214","Доминиканска република","na"],["630","Пуерто Рико","na"],["591","Панама","na"],
+  ["076","Бразилия","sa"],["032","Аржентина","sa"],["152","Чили","sa"],["170","Колумбия","sa"],["604","Перу","sa"],["218","Еквадор","sa"],["858","Уругвай","sa"],["068","Боливия","sa"],
+  ["036","Австралия","oc"],["554","Нова Зеландия","oc"]];
+const NAME=Object.fromEntries(COUNTRIES.map(c=>[c[0],c[1]])), CONT_OF=Object.fromEntries(COUNTRIES.map(c=>[c[0],c[2]]));
+const DIFF={easy:["Лесна","улици в големи градове"],medium:["Средна","покрайнини, села, пътища"],hard:["Трудна","където и да е в държавата"]};
+const DEFAULTS={rounds:5,timer:60,diff:"medium",conts:[],countries:[]};   // empty list = all
+// Google's free monthly use is 5 000 Street View and 10 000 map loads; we stop at 90%.
+const LIMITS={sv:4500,maps:9000}, WARN_AT=.8;
 
-// ---- scoring
+// ---- geo + scoring
 const rad=x=>x*Math.PI/180;
 function dist(a,b){const dLa=rad(b[0]-a[0]),dLo=rad(b[1]-a[1]);
   const h=Math.sin(dLa/2)**2+Math.cos(rad(a[0]))*Math.cos(rad(b[0]))*Math.sin(dLo/2)**2;return 2*6371*Math.asin(Math.sqrt(h));}
 const points=d=>Math.round(5000*Math.exp(-d/1492));
 console.assert(Math.abs(dist([0,0],[0,180])-20015)<5&&points(0)===5000&&points(1492)===1839,"scoring self-check");
+function offset([lat,lng],km){const b=Math.random()*2*Math.PI;return[lat+km/111*Math.cos(b),lng+km/(111*Math.cos(rad(lat)))*Math.sin(b)];}
+const polys=g=>g.type==="Polygon"?[g.coordinates]:g.coordinates;
+function inRing(x,y,r){let c=false;for(let i=0,j=r.length-1;i<r.length;j=i++){const[xi,yi]=r[i],[xj,yj]=r[j];
+  if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)c=!c;}return c;}
+const inCountry=([lat,lng],id)=>(GEO.get(id)||[]).some(f=>polys(f.geometry).some(p=>inRing(lng,lat,p[0])&&!p.slice(1).some(h=>inRing(lng,lat,h))));
+console.assert(((a,b)=>a&&!b)(inRing(1,1,[[0,0],[2,0],[2,2],[0,2]]),inRing(3,1,[[0,0],[2,0],[2,2],[0,2]])),"point-in-polygon self-check");
 
 // ---- identity + room from the link (#CODE)
 const store={get:k=>{try{return localStorage.getItem(k)}catch{return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch{}}};
@@ -109,6 +160,9 @@ const $=id=>document.getElementById(id), card=$("card");
 function el(tag,attrs={},...kids){const e=document.createElement(tag);
   for(const[k,v]of Object.entries(attrs))v==null?0:k==="on"?e.addEventListener("click",v):k==="text"?e.textContent=v:e.setAttribute(k,v);
   e.append(...kids.filter(Boolean));return e;}
+function modal(title,text){$("mTitle").textContent=title;$("mText").textContent=text;if(!$("modal").open)$("modal").showModal();}
+const fmt=n=>n.toLocaleString("bg");
+const mmss=s=>s>=60?`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`:`${s} сек`;
 
 if(!window.CONFIG||!CONFIG.mapsKey||!CONFIG.firebase||!CONFIG.firebase.databaseURL){
   card.append(el("h2",{text:"Липсват ключове"}),el("p",{text:"Попълни config.js с Google Maps ключа и Firebase настройките."}));
@@ -116,89 +170,181 @@ if(!window.CONFIG||!CONFIG.mapsKey||!CONFIG.firebase||!CONFIG.firebase.databaseU
 }
 
 firebase.initializeApp(CONFIG.firebase);
-const roomRef=firebase.database().ref("rooms/"+code);
-let state=null, players={}, pending=null, busy=false, gmap, pano, marks=[], lastView="";
+const db=firebase.database(), roomRef=db.ref("rooms/"+code);
+let state=null, players={}, settings={...DEFAULTS}, pending=null, busy="", gmap, pano, marks=[], lastView="";
+let clockSkew=0; db.ref(".info/serverTimeOffset").on("value",s=>clockSkew=s.val()||0);
+const now=()=>Date.now()+clockSkew;
+
+// ---- monthly usage counter shared by every room (lives next to them, so the room rules cover it)
+const usageRef=db.ref("rooms/_u"+new Date().toISOString().slice(0,7).replace("-",""));
+let usage={sv:0,maps:0}, warned=false;
+usageRef.on("value",s=>{const v=s.val()||{};usage={sv:+v.sv||0,maps:+v.maps||0};render();});
+const bump=k=>usageRef.child(k).transaction(n=>(+n||0)+1);
+function usageWarn(){
+  if(warned||!joined)return;
+  const hi=Object.keys(LIMITS).filter(k=>usage[k]>=LIMITS[k]*WARN_AT);
+  if(!hi.length)return;warned=true;
+  modal("Наближаваме лимита",`Този месец: Street View ${fmt(usage.sv)} от ${fmt(LIMITS.sv)}, карти ${fmt(usage.maps)} от ${fmt(LIMITS.maps)}. Когато стигнем лимита, играта спира до 1-ви следващия месец, за да не плащаме.`);
+}
+
+// ---- countries + cities (loaded once)
+let DATA=null, GEO=new Map(), BBOX=new Map();
+const dataReady=Promise.all([fetch("data.json").then(r=>r.json()),fetch("countries.json").then(r=>r.json())]).then(([d,topo])=>{
+  DATA=d;
+  for(const f of topojson.feature(topo,topo.objects.countries).features){if(!d[f.id])continue;
+    GEO.set(f.id,[...(GEO.get(f.id)||[]),f]);
+    const b=BBOX.get(f.id)||[90,-90,180,-180];
+    for(const p of polys(f.geometry))for(const[x,y]of p[0]){b[0]=Math.min(b[0],y);b[1]=Math.max(b[1],y);b[2]=Math.min(b[2],x);b[3]=Math.max(b[3],x);}
+    BBOX.set(f.id,b);}
+  render();
+}).catch(()=>modal("Грешка","Не успях да заредя картата на държавите. Презареди страницата."));
+
+function clean(s){s=s||{};return{
+  rounds:ROUND_OPTS.includes(s.rounds)?s.rounds:DEFAULTS.rounds,
+  timer:TIMERS.includes(s.timer)?s.timer:DEFAULTS.timer,
+  diff:DIFF[s.diff]?s.diff:DEFAULTS.diff,
+  conts:(Array.isArray(s.conts)?s.conts:[]).filter(c=>CONT[c]),
+  countries:(Array.isArray(s.countries)?s.countries:[]).filter(c=>NAME[c])};}
+const inConts=(id,conts)=>!conts.length||conts.includes(CONT_OF[id]);
+function poolOf(s){const base=COUNTRIES.map(c=>c[0]).filter(id=>inConts(id,s.conts));
+  const picked=s.countries.filter(id=>base.includes(id));return picked.length?picked:base;}
 
 function online(){
   return Object.entries(players).filter(([,p])=>p&&p.on&&typeof p.n==="string"&&p.n)
     .sort((a,b)=>(a[1].t||0)-(b[1].t||0)).slice(0,MAX)
     .map(([id,p],i)=>({id,n:p.n.slice(0,20),g:p.g,me:id===pid,c:COLORS[i%COLORS.length]}));
 }
-function guessOf(p,r){const a=state&&p.g&&p.g[state.id]?p.g[state.id][r]:null;
+const total=()=>state?state.rounds||5:settings.rounds;
+function guessOf(p,r){const a=state&&p&&p.g&&p.g[state.id]?p.g[state.id][r]:null;
   return Array.isArray(a)&&isFinite(a[0])&&isFinite(a[1])?a:null;}
 function totals(ps,upto){return ps.map(p=>{let s=0;for(let r=0;r<upto;r++){const x=guessOf(p,r);if(x)s+=points(dist(x,[state.locs[r].lat,state.locs[r].lng]))}return{...p,total:s}}).sort((a,b)=>b.total-a.total);}
+const revealedRounds=()=>!state?0:state.reveal?state.round+1:Math.min(state.round,total());
 // Move the shared state only from the exact state we saw, so two clicks never skip a round.
 function advance(from,patch){roomRef.child("state").transaction(s=>s&&s.id===from.id&&s.round===from.round&&!!s.reveal===!!from.reveal?{...s,...patch}:undefined);}
+function submit(x){if(state)roomRef.child(`players/${pid}/g/${state.id}/${state.round}`).set(x);pending=null;$("mapwrap").classList.remove("big");}
 
 roomRef.child("state").on("value",s=>{state=s.val();render();});
+roomRef.child("settings").on("value",s=>{settings=clean(s.val());render();});
 roomRef.child("players").on("value",s=>{players=s.val()||{};
   const ps=online();
-  if(state&&!state.reveal&&state.round<ROUNDS&&ps.length&&ps.every(p=>guessOf(p,state.round)))advance(state,{reveal:true});
+  if(state&&!state.reveal&&state.round<total()&&ps.length&&ps.every(p=>guessOf(p,state.round)))advance(state,{reveal:true});
   render();});
+const setS=patch=>roomRef.child("settings").set({...settings,...patch});
 
 function join(){
   joined=true;
   const me=roomRef.child("players/"+pid);
-  firebase.database().ref(".info/connected").on("value",s=>{if(!s.val())return;
+  db.ref(".info/connected").on("value",s=>{if(!s.val())return;
     me.child("on").onDisconnect().set(false);
     me.update({n:name,on:true,t:firebase.database.ServerValue.TIMESTAMP});});
 }
 
-// ---- random places with official Street View
-async function findPlaces(){
-  const sv=new google.maps.StreetViewService(), out=[], total=REGIONS.reduce((s,r)=>s+r[4],0);
-  for(let tries=0;out.length<ROUNDS&&tries<200;tries++){
-    let w=Math.random()*total, r=REGIONS.find(x=>(w-=x[4])<0)||REGIONS[0];
-    const loc={lat:r[0]+Math.random()*(r[1]-r[0]),lng:r[2]+Math.random()*(r[3]-r[2])};
-    try{const {data}=await sv.getPanorama({location:loc,radius:50000,sources:[google.maps.StreetViewSource.GOOGLE],preference:google.maps.StreetViewPreference.NEAREST});
-      const ll=data.location.latLng;
-      if(!out.some(o=>dist([o.lat,o.lng],[ll.lat(),ll.lng()])<300))out.push({p:data.location.pano,lat:+ll.lat().toFixed(5),lng:+ll.lng().toFixed(5)});
+// ---- random places with official Street View, by difficulty
+async function findPlaces(ids,diff,n){
+  await dataReady;
+  const sv=new google.maps.StreetViewService(), out=[], wsum=ids.reduce((s,id)=>s+DATA[id].w,0);
+  const gap=ids.length>3?150:3;   // km between places; small pools can't spread far
+  for(let tries=0;out.length<n&&tries<n*40;tries++){
+    let w=Math.random()*wsum, id=ids.find(i=>(w-=DATA[i].w)<0)||ids[0];
+    const cities=DATA[id].c, mode=diff!=="hard"&&cities.length?diff:"hard";
+    let loc, radius;
+    if(mode==="easy"){loc=offset(cities[Math.floor(Math.random()*cities.length)],Math.random()*2);radius=800;}
+    else if(mode==="medium"){loc=offset(cities[Math.floor(Math.random()*cities.length)],8+Math.random()*35);radius=5000;}
+    else{const b=BBOX.get(id);
+      for(let k=0;k<100;k++){const p=[b[0]+Math.random()*(b[1]-b[0]),b[2]+Math.random()*(b[3]-b[2])];if(inCountry(p,id)){loc=p;break;}}
+      if(!loc)continue;radius=30000;}
+    try{
+      const {data}=await sv.getPanorama({location:{lat:loc[0],lng:loc[1]},radius,sources:[google.maps.StreetViewSource.GOOGLE],preference:google.maps.StreetViewPreference.NEAREST});
+      const ll=[+data.location.latLng.lat().toFixed(5),+data.location.latLng.lng().toFixed(5)];
+      if(mode!=="easy"&&!inCountry(ll,id))continue;    // drifted over a border
+      if(out.some(o=>dist([o.lat,o.lng],ll)<gap))continue;
+      out.push({p:data.location.pano,lat:ll[0],lng:ll[1],c:id});
+      busy=`Търся места… ${out.length}/${n}`;render();
     }catch{}
   }
-  if(out.length<ROUNDS)throw new Error("not enough places");
+  if(out.length<n)throw new Error("not enough places");
   return out;
+}
+
+async function startGame(){
+  const s=settings, need=online().length*s.rounds;
+  if(usage.sv+need>LIMITS.sv)return modal("Месечният лимит е достигнат",`Street View този месец: ${fmt(usage.sv)} от ${fmt(LIMITS.sv)}. Игра с ${online().length} души и ${s.rounds} рунда иска още ${need}. Опитай с по-малко рундове или изчакай 1-ви следващия месец.`);
+  const ids=poolOf(s);
+  busy="Търся места…";render();
+  try{const locs=await findPlaces(ids,s.diff,s.rounds);
+    await roomRef.child("state").set({id:Date.now(),round:0,reveal:false,locs,rounds:s.rounds,timer:s.timer,diff:s.diff,endsAt:now()+s.timer*1000});}
+  catch{modal("Не намерих достатъчно места","Избери повече държави или друга трудност и опитай пак.");}
+  busy="";render();
 }
 
 // ---- maps
 function clearMarks(){marks.forEach(m=>m.setMap?m.setMap(null):(m.map=null));marks=[];}
 function pin(ll,color,label){
-  const PE=google.maps.marker.PinElement, AM=google.maps.marker.AdvancedMarkerElement;
-  const m=new AM({map:gmap,position:{lat:ll[0],lng:ll[1]},title:label||"",
-    content:new PE({background:color,borderColor:"#fff",glyphColor:"#fff",scale:.9})});
+  const m=new google.maps.marker.AdvancedMarkerElement({map:gmap,position:{lat:ll[0],lng:ll[1]},title:label||"",
+    content:new google.maps.marker.PinElement({background:color,borderColor:"#fff",glyphColor:"#fff",scale:.9})});
   marks.push(m);return m;
 }
 window.initMaps=function(){
+  setTimeout(()=>bump("maps"));
   pano=new google.maps.StreetViewPanorama($("sv"),{addressControl:false,showRoadLabels:false,fullscreenControl:false,
     motionTracking:false,motionTrackingControl:false,enableCloseButton:false,panControl:false,visible:false});
   gmap=new google.maps.Map($("map"),{center:{lat:25,lng:10},zoom:1,mapId:"DEMO_MAP_ID",streetViewControl:false,
     mapTypeControl:false,fullscreenControl:false,clickableIcons:false,gestureHandling:"greedy",keyboardShortcuts:false});
   gmap.addListener("click",e=>{
-    if(!state||state.reveal||state.round>=ROUNDS||!joined)return;
+    if(!state||state.reveal||state.round>=total()||!joined)return;
     const me=online().find(p=>p.me);if(!me||guessOf(me,state.round))return;
     pending=[+e.latLng.lat().toFixed(4),+e.latLng.lng().toFixed(4)];render();
   });
   render();
 };
-const s=document.createElement("script");
-s.src="https://maps.googleapis.com/maps/api/js?key="+encodeURIComponent(CONFIG.mapsKey)+"&v=weekly&libraries=marker&callback=initMaps&language=bg&loading=async";
-s.async=true;document.head.append(s);
+// Don't even load Google Maps once this month's map loads hit the limit.
+usageRef.once("value").then(s=>{
+  const maps=+(s.val()||{}).maps||0;
+  if(maps>=LIMITS.maps)return modal("Месечният лимит е достигнат",`Картите са заредени ${fmt(maps)} пъти този месец (лимит ${fmt(LIMITS.maps)}). Играта спира до 1-ви следващия месец, за да не плащаме.`);
+  const s2=document.createElement("script");
+  s2.src="https://maps.googleapis.com/maps/api/js?key="+encodeURIComponent(CONFIG.mapsKey)+"&v=weekly&libraries=marker&callback=initMaps&language=bg&loading=async";
+  s2.async=true;document.head.append(s2);
+});
 
 $("grow").onclick=()=>$("mapwrap").classList.toggle("big");
-$("lock").onclick=()=>{if(!pending||!state)return;
-  roomRef.child(`players/${pid}/g/${state.id}/${state.round}`).set(pending);pending=null;$("mapwrap").classList.remove("big");};
+$("lock").onclick=()=>{if(pending)submit(pending);};
 $("share").onclick=async()=>{try{await navigator.clipboard.writeText(location.href);$("share").textContent="Копирано ✓";}
-  catch{prompt("Копирай линка:",location.href)}setTimeout(()=>$("share").textContent="Копирай линка",1500);};
+  catch{modal("Линк към стаята",location.href)}setTimeout(()=>$("share").textContent="Копирай линка",1500);};
+
+// ---- timer: when it runs out, the pending pin counts and the round is revealed
+let expired="";
+setInterval(()=>{
+  const t=$("timer");
+  if(!state||state.reveal||state.round>=total()||!state.endsAt){t.textContent="";return;}
+  const left=Math.max(0,Math.ceil((state.endsAt-now())/1000));
+  t.textContent=mmss(left).replace(" сек","");t.classList.toggle("low",left<=10);
+  const k=state.id+"-"+state.round;
+  if(left===0&&expired!==k){expired=k;
+    const me=online().find(p=>p.me);if(pending&&me&&!guessOf(me,state.round))submit(pending);
+    const at=state;setTimeout(()=>advance(at,{reveal:true}),1000);}
+},250);
 
 // ---- UI
-function playerList(ps,extra){return el("ul",{},...ps.map(p=>el("li",{},el("span",{class:"dot",style:"background:"+p.c}),
-  el("span",{class:"nm",text:p.n+(p.me?" (ти)":"")}),extra?extra(p):null)));}
+function rankList(ps,extra){return el("ol",{},...ps.map((p,i)=>el("li",{},el("span",{class:"pos",text:i+1+"."}),el("span",{class:"dot",style:"background:"+p.c}),
+  el("span",{class:"nm",text:p.n+(p.me?" (ти)":"")}),el("span",{class:"sc",text:fmt(p.total)}),extra?extra(p):null)));}
+function seg(label,opts,cur,pick){return el("div",{class:"field"},el("span",{class:"lbl",text:label}),
+  el("div",{class:"chips"},...opts.map(([v,t])=>el("button",{class:"chip","aria-pressed":String(v===cur),on:()=>pick(v),text:t}))));}
+function multi(label,opts,sel,change,id){const all=!sel.length;
+  return el("div",{class:"field span"},el("span",{class:"lbl",text:label}),el("div",{class:"chips",id},
+    el("button",{class:"chip","aria-pressed":String(all),on:()=>change([]),text:"Всички"}),
+    ...opts.map(([v,t])=>el("button",{class:"chip","aria-pressed":String(!all&&sel.includes(v)),text:t,
+      on:()=>change(all?[v]:sel.includes(v)?sel.filter(x=>x!==v):[...sel,v])}))));}
+function meter(label,used,limit){const r=Math.min(1,used/limit);
+  return[el("span",{text:label}),el("div",{class:"meter"+(r>=1?" bad":r>=WARN_AT?" warn":"")},el("i",{style:`width:${(r*100).toFixed(1)}%`})),el("span",{text:`${fmt(used)} / ${fmt(limit)}`})];}
 
 function render(){
   const ps=online(), me=ps.find(p=>p.me), ready=!!gmap;
   $("who").textContent=`Стая ${code} · ${ps.length}/${MAX}`;
   $("share").hidden=!joined;
-  $("round").textContent=state&&state.round<ROUNDS?`Рунд ${state.round+1} / ${ROUNDS}`:state?"Финал":"";
+  $("round").textContent=state&&state.round<total()?`Рунд ${state.round+1} / ${total()}`:state?"Финал":"";
+  // keep typing and scroll positions across live re-renders
   const oldInp=$("name"), typed=oldInp?oldInp.value:name, focused=document.activeElement===oldInp;
+  const keep={card:card.scrollTop,ctry:$("ctry")?$("ctry").scrollTop:0};
   card.replaceChildren();card.hidden=false;card.className="card center";
   $("players").hidden=true;$("mapwrap").hidden=true;$("mapwrap").classList.remove("full");
   let view="";
@@ -210,42 +356,53 @@ function render(){
     view="join";
     const full=ps.length>=MAX;
     const inp=el("input",{id:"name",maxlength:"20",placeholder:"Твоето име",autocomplete:"off"});inp.value=typed;
-    const go=()=>{const v=inp.value.trim();if(!v)return inp.focus();name=v;store.set("kade-name",v);join();render();};
+    const go=()=>{const v=inp.value.trim();if(!v)return inp.focus();name=v;store.set("kade-name",v);join();render();usageWarn();};
     inp.addEventListener("keydown",e=>e.key==="Enter"&&go());
     card.append(el("h2",{text:"Познай къде сме"}),
-      el("p",{text:"Пускаме те на случайно място в Street View. Оглеждаш се, разхождаш се и цъкаш на картата къде мислиш, че си. 5 рунда, до 5000 точки на рунд."}),
+      el("p",{text:"Пускаме те на случайно място в Street View. Оглеждаш се, разхождаш се и цъкаш на картата къде мислиш, че си. До 5000 точки на рунд."}),
       full?el("p",{text:"Стаята е пълна (10 играчи)."}):el("div",{class:"row"},inp,el("button",{class:"primary",on:go,text:"Влез"})),
       ps.length?el("p",{class:"note",text:"Вътре са: "+ps.map(p=>p.n).join(", ")}):"");
     if(!full&&(focused||lastView!=="join"))setTimeout(()=>inp.focus(),0);
     pano&&pano.setVisible(false);
   }
-  else if(!state||state.round>=ROUNDS){
+  else if(!state||state.round>=total()){
     view="lobby"+(state?state.id:0);
     pano&&pano.setVisible(false);
+    card.classList.add("wide");
     if(state){
-      const t=totals(ps,ROUNDS);
-      card.append(el("h2",{text:t[0]?`🏆 ${t[0].n} печели!`:"Край"}),
-        el("ul",{},...t.map((p,i)=>el("li",{},el("span",{class:"d",text:i+1+"."}),el("span",{class:"dot",style:"background:"+p.c}),
-          el("span",{class:"nm",text:p.n+(p.me?" (ти)":"")}),el("span",{class:"sc",text:p.total.toLocaleString("bg")})))));
+      card.append(el("h2",{text:"Финал"}),rankList(totals(ps,total())));
+      const t=totals(ps,total());if(t[0])card.firstChild.textContent=`🏆 ${t[0].n} печели!`;
     }else card.append(el("h2",{text:"Чакалня"}),
-      el("p",{text:"Прати линка на приятелите си. Когато всички влязат, някой натиска „Започни“."}),playerList(ps));
-    const start=el("button",{class:"primary",disabled:busy||!ready?"":null,text:busy?"Търся места…":state?"Нова игра":"Започни игра",
-      on:async()=>{busy=true;render();
-        try{const locs=await findPlaces();await roomRef.child("state").set({id:Date.now(),round:0,reveal:false,locs});}
-        catch{alert("Не успях да намеря места. Опитай пак.");}
-        busy=false;render();}});
-    card.append(el("div",{class:"row"},start,el("button",{text:"Копирай линка",on:()=>$("share").click()})));
+      el("p",{text:"Прати линка на приятелите си. Настройките са общи за стаята: всеки може да ги смени."}),rankList(ps.map(p=>({...p,total:0}))));
+    const s=settings, pool=poolOf(s);
+    const ctryOpts=COUNTRIES.filter(c=>inConts(c[0],s.conts)).sort((a,b)=>a[1].localeCompare(b[1],"bg")).map(c=>[c[0],c[1]]);
+    card.append(el("div",{class:"settings"},
+      seg("Рундове",ROUND_OPTS.map(v=>[v,String(v)]),s.rounds,v=>setS({rounds:v})),
+      seg("Време за рунд",TIMERS.map(v=>[v,mmss(v)]),s.timer,v=>setS({timer:v})),
+      el("div",{class:"field span"},seg("Трудност",Object.entries(DIFF).map(([k,v])=>[k,v[0]]),s.diff,v=>setS({diff:v})),
+        el("span",{class:"note",text:DIFF[s.diff][1]})),
+      multi("Континенти",Object.entries(CONT),s.conts,v=>setS({conts:v,countries:s.countries.filter(id=>inConts(id,v))}),"conts"),
+      multi("Държави",ctryOpts,s.countries.filter(id=>inConts(id,s.conts)),v=>setS({countries:v}),"ctry"),
+      el("p",{class:"note span",text:`Играем в ${pool.length===COUNTRIES.length?"целия свят":pool.length===1?NAME[pool[0]]:pool.length+" държави"}.`})));
+    card.append(el("div",{class:"field"},el("span",{class:"lbl",text:"Разход този месец (безплатният лимит на Google)"}),
+      el("div",{class:"usage"},...meter("Street View",usage.sv,LIMITS.sv),...meter("Карти",usage.maps,LIMITS.maps))));
+    card.append(el("div",{class:"row"},
+      el("button",{class:"primary",disabled:busy||!ready||!DATA?"":null,text:busy||(state?"Нова игра":"Започни игра"),on:startGame}),
+      el("button",{text:"Копирай линка",on:()=>$("share").click()})));
+    usageWarn();
   }
   else if(!state.reveal){
     view="guess"+state.id+"-"+state.round;
     const loc=state.locs[state.round], mine=guessOf(me,state.round);
     card.hidden=true;
     $("mapwrap").hidden=false;$("players").hidden=false;
-    $("players").replaceChildren(playerList(ps,p=>guessOf(p,state.round)?el("span",{class:"tick",text:"✓"}):el("span",{class:"d",text:"…"})),
-      el("button",{style:"margin-top:8px;width:100%",text:"Покажи резултата",on:()=>advance(state,{reveal:true})}));
+    $("players").replaceChildren(el("span",{class:"lbl",text:"Класиране"}),
+      rankList(totals(ps,revealedRounds()),p=>guessOf(p,state.round)?el("span",{class:"tick",text:"✓"}):el("span",{class:"d",text:"…"})),
+      el("button",{style:"margin-top:8px;width:100%;padding:6px 10px;font-size:13px",text:"Покажи резултата",on:()=>advance(state,{reveal:true})}));
     if(ready&&view!==lastView){
       pano.setPano(loc.p);pano.setPov({heading:Math.floor(Math.random()*360),pitch:0});pano.setZoom(0);pano.setVisible(true);
       gmap.setCenter({lat:25,lng:10});gmap.setZoom(1);pending=null;
+      lastView=view;setTimeout(()=>bump("sv"));   // count once; the counter's own update re-renders
     }
     if(ready){clearMarks();const x=mine||pending;if(x)pin(x,me.c);}
     $("lock").disabled=!pending||!!mine;
@@ -259,20 +416,21 @@ function render(){
     if(ready){
       clearMarks();
       const b=new google.maps.LatLngBounds();b.extend({lat:truth[0],lng:truth[1]});
-      pin(truth,"#111","Тук беше");
+      pin(truth,"#111",NAME[loc.c]||"Тук беше");
       rows.forEach(p=>{if(!p.x)return;pin(p.x,p.c,p.n);b.extend({lat:p.x[0],lng:p.x[1]});
         marks.push(new google.maps.Polyline({map:gmap,path:[{lat:p.x[0],lng:p.x[1]},{lat:truth[0],lng:truth[1]}],geodesic:true,strokeColor:p.c,strokeWeight:2}));});
       if(view!==lastView)setTimeout(()=>gmap.fitBounds(b,60),50);
     }
-    const t=totals(ps,state.round+1);
-    card.append(el("h2",{text:`Рунд ${state.round+1}`}),
+    card.append(el("h2",{text:`Рунд ${state.round+1}${NAME[loc.c]?" · "+NAME[loc.c]:""}`}),
       el("ul",{},...rows.map(p=>el("li",{},el("span",{class:"dot",style:"background:"+p.c}),el("span",{class:"nm",text:p.n+(p.me?" (ти)":"")}),
-        el("span",{class:"d",text:p.d==null?"не позна":Math.round(p.d).toLocaleString("bg")+" км"}),el("span",{class:"sc",text:"+"+p.pt})))),
-      el("p",{class:"note",text:"Общо: "+t.map(p=>`${p.n} ${p.total.toLocaleString("bg")}`).join(" · ")}),
+        el("span",{class:"d",text:p.d==null?"не позна":fmt(Math.round(p.d))+" км"}),el("span",{class:"sc",text:"+"+p.pt})))),
+      el("div",{class:"field"},el("span",{class:"lbl",text:"Класиране"}),rankList(totals(ps,state.round+1))),
       el("div",{class:"row"},
-        el("button",{class:"primary",text:state.round+1<ROUNDS?"Следващ рунд":"Към финала",on:()=>advance(state,{round:state.round+1,reveal:false})}),
+        el("button",{class:"primary",text:state.round+1<total()?"Следващ рунд":"Към финала",
+          on:()=>advance(state,{round:state.round+1,reveal:false,endsAt:now()+(state.timer||60)*1000})}),
         el("a",{class:"btn",href:`https://www.google.com/maps/@?api=1&map_action=pano&pano=${encodeURIComponent(loc.p)}`,target:"_blank",rel:"noopener",text:"Виж в Google Maps ↗"})));
   }
+  if(view===lastView){card.scrollTop=keep.card;if($("ctry"))$("ctry").scrollTop=keep.ctry;}
   lastView=view;
 }
 render();
