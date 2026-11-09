@@ -411,8 +411,11 @@ function drawBg(){
   if(!LAND.length||!W||!H)return;
   const dpr=Math.min(2,window.devicePixelRatio||1), g=c.getContext("2d");
   c.width=W*dpr;c.height=H*dpr;g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,W,H);
-  const top=80,bot=-58,s=Math.max(W/360,H/(top-bot))*1.05,ox=(W-360*s)/2,oy=(H-(top-bot)*s)/2;
-  const X=lng=>ox+(lng+180)*s, Y=lat=>oy+(top-lat)*s;
+  // Web Mercator, like Google Maps, so the north isn't squashed
+  const M=lat=>Math.log(Math.tan(Math.PI/4+rad(Math.max(-85,Math.min(85,lat)))/2))*180/Math.PI;
+  // fill the screen; when the map is taller than the screen, keep the north in view and crop the south
+  const top=76,bot=-56,span=M(top)-M(bot),s=Math.max(W/360,H/span),ox=(W-360*s)/2,oy=span*s>H?0:(H-span*s)/2;
+  const X=lng=>ox+(lng+180)*s, Y=lat=>oy+(M(top)-M(lat))*s;
   g.strokeStyle="rgb(140 150 255 / .10)";g.lineWidth=1;g.fillStyle="rgb(170 180 255 / .4)";g.font="11px sans-serif";
   for(let lat=60;lat>=-40;lat-=20){g.beginPath();g.moveTo(0,Y(lat));g.lineTo(W,Y(lat));g.stroke();
     g.fillText(lat?`${Math.abs(lat)}°${lat>0?"N":"S"}`:"0°",8,Y(lat)-4);}
@@ -420,7 +423,12 @@ function drawBg(){
     if(lng%60===0)g.fillText(lng?`${Math.abs(lng)}°${lng>0?"E":"W"}`:"0°",X(lng)+4,H-8);}
   const grad=g.createLinearGradient(0,0,W,H);grad.addColorStop(0,"#3b2f97");grad.addColorStop(1,"#5a46c4");
   g.save();g.shadowColor="rgb(140 100 255 / .55)";g.shadowBlur=24;g.fillStyle=grad;g.beginPath();
-  for(const f of LAND)for(const p of polys(f.geometry))for(const ring of p){ring.forEach(([x,y],i)=>i?g.lineTo(X(x),Y(y)):g.moveTo(X(x),Y(y)));g.closePath();}
+  // unwrap rings that cross the 180° line (Russia, Fiji, Antarctica) and draw the overflow on the other side too
+  for(const f of LAND)if(f.id!=="010")for(const p of polys(f.geometry))for(const ring of p){   // 010 = Antarctica: wraps the pole, off-screen anyway
+    let prev=null,shift=0,max=-999;
+    const pts=ring.map(([x,y])=>{if(prev!==null){if(x-prev>180)shift-=360;else if(prev-x>180)shift+=360;}prev=x;max=Math.max(max,x+shift);return[x+shift,y];});
+    for(const off of max>180?[0,-360]:[0]){pts.forEach(([x,y],i)=>i?g.lineTo(X(x+off),Y(y)):g.moveTo(X(x+off),Y(y)));g.closePath();}
+  }
   g.fill("evenodd");g.restore();
   // city lights: small dots, every tenth one with a soft glow
   let i=0;
