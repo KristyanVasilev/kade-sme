@@ -37,6 +37,7 @@ main{position:relative;flex:1;min-height:0}
 #players{position:absolute;z-index:6;left:16px;top:16px;background:color-mix(in srgb,var(--card) 90%,transparent);
   border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:240px;max-width:calc(100% - 32px)}
 #players .lbl{display:block;margin-bottom:6px}
+#home{position:absolute;z-index:6;right:16px;top:16px;padding:8px 12px;font-size:14px;background:color-mix(in srgb,var(--card) 90%,transparent)}
 .card{position:absolute;z-index:10;left:16px;right:16px;bottom:16px;margin-inline:auto;max-width:520px;max-height:70%;overflow:auto;
   background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:14px;
   box-shadow:0 6px 24px rgb(0 0 0 / .4)}
@@ -96,6 +97,7 @@ dialog p{margin:0 0 16px;color:var(--muted)}
 <main>
   <div id="sv"></div>
   <div id="players" hidden></div>
+  <button id="home" type="button" hidden>⟲ Към началото</button>
   <div id="mapwrap" hidden>
     <div id="map"></div>
     <div id="mapbar">
@@ -307,6 +309,9 @@ usageRef.once("value").then(s=>{
 });
 
 $("grow").onclick=()=>$("mapwrap").classList.toggle("big");
+let startPov={heading:0,pitch:0};
+$("home").onclick=()=>{const loc=state&&state.locs[state.round];if(!pano||!loc)return;
+  pano.setPano(loc.p);pano.setPov(startPov);pano.setZoom(0);};
 $("lock").onclick=()=>{if(pending)submit(pending);};
 $("share").onclick=async()=>{try{await navigator.clipboard.writeText(location.href);$("share").textContent="Копирано ✓";}
   catch{modal("Линк към стаята",location.href)}setTimeout(()=>$("share").textContent="Копирай линка",1500);};
@@ -346,7 +351,7 @@ function render(){
   const oldInp=$("name"), typed=oldInp?oldInp.value:name, focused=document.activeElement===oldInp;
   const keep={card:card.scrollTop,ctry:$("ctry")?$("ctry").scrollTop:0};
   card.replaceChildren();card.hidden=false;card.className="card center";
-  $("players").hidden=true;$("mapwrap").hidden=true;$("mapwrap").classList.remove("full");
+  $("players").hidden=true;$("home").hidden=true;$("mapwrap").hidden=true;$("mapwrap").classList.remove("full");
   let view="";
 
   if(joined&&!me&&ps.length<MAX){
@@ -395,12 +400,13 @@ function render(){
     view="guess"+state.id+"-"+state.round;
     const loc=state.locs[state.round], mine=guessOf(me,state.round);
     card.hidden=true;
-    $("mapwrap").hidden=false;$("players").hidden=false;
+    $("mapwrap").hidden=false;$("players").hidden=false;$("home").hidden=!ready;
     $("players").replaceChildren(el("span",{class:"lbl",text:"Класиране"}),
       rankList(totals(ps,revealedRounds()),p=>guessOf(p,state.round)?el("span",{class:"tick",text:"✓"}):el("span",{class:"d",text:"…"})),
       el("button",{style:"margin-top:8px;width:100%;padding:6px 10px;font-size:13px",text:"Покажи резултата",on:()=>advance(state,{reveal:true})}));
     if(ready&&view!==lastView){
-      pano.setPano(loc.p);pano.setPov({heading:Math.floor(Math.random()*360),pitch:0});pano.setZoom(0);pano.setVisible(true);
+      startPov={heading:Math.floor(Math.random()*360),pitch:0};
+      pano.setPano(loc.p);pano.setPov(startPov);pano.setZoom(0);pano.setVisible(true);
       gmap.setCenter({lat:25,lng:10});gmap.setZoom(1);pending=null;
       lastView=view;setTimeout(()=>bump("sv"));   // count once; the counter's own update re-renders
     }
