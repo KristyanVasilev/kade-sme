@@ -62,7 +62,7 @@ body.home header{border-bottom-color:transparent}
 .prow .nm{display:flex;flex-direction:column;white-space:normal}
 .prow .st{font-size:13px;color:var(--accent)}
 /* round results card */
-.card.glass.reveal{max-width:600px;gap:14px;max-height:calc(100% - 32px)}
+.card.glass.reveal{max-width:600px;gap:14px;max-height:calc(100% - 32px);background:rgb(18 22 70 / .9)}   /* sits on the light map: needs more body */
 .reveal-head{display:flex;align-items:center;gap:14px}
 .reveal-head h2{font:800 26px/1.1 var(--body);text-transform:uppercase;letter-spacing:.5px;color:#fff}
 .flagpin{position:relative;width:40px;height:48px;flex:none;filter:drop-shadow(0 6px 10px rgb(0 0 0 / .45))}
@@ -70,7 +70,8 @@ body.home header{border-bottom-color:transparent}
 .flagpin img{position:absolute;left:8px;top:6px;width:24px;height:24px;border-radius:50%;object-fit:cover;border:2px solid #fff}
 .rrows{gap:4px}
 .rrow,.srow{display:grid;align-items:center;gap:10px;padding:7px 10px;border-radius:12px;font-variant-numeric:tabular-nums}
-.rrow{grid-template-columns:auto 1fr auto 84px}
+.rrow{grid-template-columns:auto 1fr auto minmax(84px,auto)}
+.rrow .pts{white-space:nowrap}
 .srow{grid-template-columns:2ch 28px 1fr auto}
 .rrow .nm,.srow .nm{font-weight:600;color:#fff;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rrow .km{color:var(--text-muted-light);font-size:14px}
