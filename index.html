@@ -107,6 +107,7 @@ body.home header{border-bottom-color:transparent}
 #timer{font:800 22px/1 var(--display);font-variant-numeric:tabular-nums}
 #timer.low{color:var(--accent)}
 #who{margin-left:auto;font-size:14px;color:var(--muted)}
+#mute{padding:6px 10px;font-size:16px;background:transparent;border-color:rgb(255 255 255 / .15);border-radius:999px}
 main{position:relative;flex:1;min-height:0}
 #sv{position:absolute;inset:0;background:transparent}
 #mapwrap{position:absolute;z-index:5;right:16px;bottom:16px;width:min(340px,45vw);height:min(240px,35vh);
@@ -176,6 +177,7 @@ dialog p{margin:0 0 16px;color:var(--muted)}
   <div id="round"></div>
   <div id="timer" aria-live="off"></div>
   <div id="who"></div>
+  <button id="mute" type="button" aria-label="Изключи звука" title="Звук на таймера">🔊</button>
   <button id="share" hidden>Копирай линка</button>
 </header>
 <main>
@@ -438,7 +440,7 @@ window.initMaps=function(){
   setTimeout(()=>bump("maps"));
   pano=new google.maps.StreetViewPanorama($("sv"),{addressControl:false,showRoadLabels:false,fullscreenControl:false,
     motionTracking:false,motionTrackingControl:false,enableCloseButton:false,panControl:false,visible:false});
-  gmap=new google.maps.Map($("map"),{center:{lat:25,lng:10},zoom:1,mapId:"DEMO_MAP_ID",colorScheme:"DARK",streetViewControl:false,
+  gmap=new google.maps.Map($("map"),{center:{lat:25,lng:10},zoom:1,mapId:"DEMO_MAP_ID",colorScheme:"LIGHT",streetViewControl:false,
     mapTypeControl:false,fullscreenControl:false,clickableIcons:false,gestureHandling:"greedy",keyboardShortcuts:false});
   gmap.addListener("click",e=>{
     if(!state||state.reveal||state.round>=total()||!joined)return;
@@ -465,6 +467,32 @@ $("share").onclick=async()=>{try{await navigator.clipboard.writeText(location.hr
   catch{modal("Линк към стаята",location.href)}setTimeout(()=>$("share").textContent="Копирай линка",1500);};
 
 // ---- timer: when it runs out, the pending pin counts and the round is revealed
+// ---- timer sounds, made in the browser (no files): chime at 1:00/0:30/0:15, ticks 5..1, long tone at 0
+let actx=null, muted=store.get("kade-mute")==="1";
+const played=new Set();
+function audio(){
+  const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;
+  if(!actx)actx=new C();if(actx.state==="suspended")actx.resume();return actx;
+}
+// browsers only allow sound after the player has clicked or pressed a key
+addEventListener("pointerdown",audio,{once:true});addEventListener("keydown",audio,{once:true});
+function beep(freq,dur,vol=.2,when=0){
+  if(muted)return;const a=audio();if(!a||a.state!=="running")return;
+  const o=a.createOscillator(),g=a.createGain(),t0=a.currentTime+when;
+  o.type="sine";o.frequency.value=freq;
+  g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(vol,t0+.01);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+  o.connect(g).connect(a.destination);o.start(t0);o.stop(t0+dur+.05);
+}
+const SOUNDS={chime:()=>{beep(880,.18);beep(1320,.28,.2,.18);},tick:()=>beep(1000,.09,.25),end:()=>{beep(660,.15,.25);beep(440,.5,.25,.15);}};
+function timerSound(left,k){
+  const kind=[60,30,15].includes(left)?"chime":left>=1&&left<=5?"tick":left===0?"end":null;
+  // only for thresholds the round actually passes (a 30 s round doesn't chime "1 minute")
+  if(!kind||played.has(k+"-"+left)||(state.timer||60)<=left)return;
+  played.add(k+"-"+left);SOUNDS[kind]();
+}
+function setMute(v){muted=v;store.set("kade-mute",v?"1":"0");$("mute").textContent=v?"🔇":"🔊";$("mute").setAttribute("aria-label",v?"Включи звука":"Изключи звука");}
+setMute(muted);$("mute").onclick=()=>{setMute(!muted);if(!muted)SOUNDS.tick();};
+
 let expired="";
 setInterval(()=>{
   const t=$("timer");
@@ -472,6 +500,7 @@ setInterval(()=>{
   const left=Math.max(0,Math.ceil((state.endsAt-now())/1000));
   t.textContent=mmss(left).replace(" сек","");t.classList.toggle("low",left<=10);
   const k=state.id+"-"+state.round;
+  if(joined)timerSound(left,k);
   if(left===0&&expired!==k){expired=k;
     const me=online().find(p=>p.me);if(pending&&me&&!guessOf(me,state.round))submit(pending);
     const at=state;setTimeout(()=>advance(at,{reveal:true}),1000);}
