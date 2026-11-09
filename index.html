@@ -145,7 +145,7 @@ main{position:relative;flex:1;min-height:0}
   border:2px solid var(--line);border-radius:10px;overflow:hidden;transition:width .15s,height .15s;background:var(--card)}
 @media (hover:hover){#mapwrap:hover{width:min(640px,60vw);height:min(460px,60vh)}}
 #mapwrap.big,#mapwrap.full{width:calc(100% - 32px);height:calc(100% - 32px)}
-#mapwrap.full{right:0;bottom:0;width:100%;height:100%;border:0;border-radius:0}
+#mapwrap.full{right:0;bottom:0;width:100%;height:100%;border:0;border-radius:0;transition:none}   /* no animation: the results fit needs the final size */
 #map{position:absolute;inset:0}
 #mapbar{position:absolute;left:8px;right:8px;bottom:8px;display:flex;gap:8px;z-index:2}
 #mapbar button{flex:1;padding:8px 12px}
