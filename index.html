@@ -61,6 +61,9 @@ body.home header{border-bottom-color:transparent}
 .prow{padding:10px 12px;border-radius:12px;background:rgb(10 12 48 / .45);border:1px solid rgb(255 255 255 / .12);gap:12px}
 .prow .nm{display:flex;flex-direction:column;white-space:normal}
 .prow .st{font-size:13px;color:var(--accent)}
+.prow .score{margin-left:auto;flex:none;font-size:18px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+.prow.win{background:rgb(255 199 39 / .1);border-color:rgb(255 199 39 / .55)}
+.prow.win .score{font-size:22px}
 .prow .kick{margin-left:auto;flex:none;width:34px;height:34px;padding:0;border-radius:50%;font-size:14px;
   background:rgb(255 92 122 / .14);border-color:rgb(255 92 122 / .45);color:#ff9bb0}
 .prow .kick:hover{background:rgb(255 92 122 / .3);color:#fff}
@@ -641,7 +644,13 @@ function render(){
       el("div",{class:"lobby-art"},el("img",{src:"lobby.webp",alt:""})));
     if(state){
       const t=totals(ps,total());
-      card.append(head(t[0]?`🏆 ${t[0].n} печели!`:"Финал",`Край на играта · ${total()} ${total()===1?"рунд":"рунда"}`),rankList(t));
+      const medal=["🥇","🥈","🥉"];
+      card.append(head(t[0]?`🏆 ${t[0].n} печели!`:"Финал",`Край на играта · ${total()} ${total()===1?"рунд":"рунда"}`),
+        el("ul",{class:"prows"},...t.map((p,i)=>el("li",{class:"prow"+(i===0?" win":"")},
+          el("span",{class:"avatar",style:"background:"+p.c,text:(p.n.trim()[0]||"?").toUpperCase()}),
+          el("span",{class:"nm"},el("b",{text:`${medal[i]||i+1+"."} ${p.n}${p.me?" (ти)":""}`}),
+            el("span",{class:"st",text:i===0?"победител":`на ${fmt(t[0].total-p.total)} точки от първия`})),
+          el("span",{class:"score",text:fmt(p.total)})))));
     }else card.append(head("Чакалня","Прати линка на приятелите си. Настройките са общи за стаята: всеки може да ги смени."),
       el("ul",{class:"prows"},...ps.map((p,i)=>el("li",{class:"prow"},
         el("span",{class:"avatar",style:"background:"+p.c,text:(p.n.trim()[0]||"?").toUpperCase()}),
@@ -711,6 +720,8 @@ function render(){
   }
   const home=view==="join"||view.startsWith("lobby");
   document.body.classList.toggle("home",home);
+  // a hidden panorama still paints Google's grey (#e5e3df) over the page; only show it while guessing
+  $("sv").style.visibility=view.startsWith("guess")?"visible":"hidden";
   if(home&&!bgDrawn)requestAnimationFrame(drawBg);
   if(home&&!globeRun&&LAND.length){globeRun=true;requestAnimationFrame(spinGlobe);}
   if(view===lastView){card.scrollTop=keep.card;if($("ctry"))$("ctry").scrollTop=keep.ctry;}
