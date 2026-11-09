@@ -29,7 +29,7 @@ jobs:
         run: |
           test -n "$CONFIG_JS" || { echo "CONFIG_JS secret is missing"; exit 1; }
           mkdir _site
-          cp index.html data.json countries.json traveler.webp _site/
+          cp index.html data.json countries.json *.webp _site/
           printf '%s\n' "$CONFIG_JS" > _site/config.js
       - uses: actions/upload-pages-artifact@v3
         with:

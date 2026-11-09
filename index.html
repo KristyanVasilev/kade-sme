@@ -66,7 +66,7 @@ body.home header{border-bottom-color:transparent}
 .actions .btn3d{border-radius:12px;padding:14px}
 .btn-glass{background:rgb(10 12 48 / .6);border:1px solid rgb(255 255 255 / .2);border-radius:12px;padding:14px}
 .actions .back{background:transparent;border-color:rgb(255 255 255 / .15)}
-.plane{position:absolute;width:110px;filter:drop-shadow(0 10px 14px rgb(0 0 0 / .45))}
+.plane{position:absolute;width:140px;height:auto;filter:drop-shadow(0 12px 16px rgb(0 0 0 / .45))}
 .hero-text{display:flex;flex-direction:column;gap:16px;min-width:0}
 .hero .hero-title{font:italic 900 clamp(34px,5vw,52px)/1 var(--heavy);text-transform:uppercase;letter-spacing:.005em;margin:0}
 .hero-title span{display:block}.hero-title .y{color:var(--accent)}
@@ -180,41 +180,8 @@ dialog p{margin:0 0 16px;color:var(--muted)}
       <g fill="#c9ceff" font-family="sans-serif" font-size="9" font-weight="700" text-anchor="middle"><text x="42" y="16">N</text><text x="42" y="75">S</text><text x="71" y="45">E</text><text x="13" y="45">W</text></g>
       <path d="M42 20l6 22h-12z" fill="#ff5a4e"/><path d="M42 64l6-22h-12z" fill="#dfe3ff"/><circle cx="42" cy="42" r="3" fill="#1a1d5c" stroke="#fff"/></svg>
     <canvas class="globe" id="globe"></canvas>
-    <svg class="plane" style="left:4%;top:60%;transform:rotate(-10deg)" viewBox="0 0 120 80"><use href="#plane"/></svg>
-    <svg class="plane" style="right:4%;top:12%;transform:scaleX(-1) rotate(-8deg)" viewBox="0 0 120 80"><use href="#plane"/></svg>
-    <svg width="0" height="0" style="position:absolute"><defs>
-      <!-- vintage biplane, clay-style shading, nose to the right -->
-      <linearGradient id="plBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff6e4"/><stop offset=".45" stop-color="#f0d6a8"/><stop offset="1" stop-color="#b98a55"/></linearGradient>
-      <linearGradient id="plWing" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffbf6e"/><stop offset="1" stop-color="#d9772c"/></linearGradient>
-      <linearGradient id="plWingLow" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e88d3c"/><stop offset="1" stop-color="#a9561c"/></linearGradient>
-      <linearGradient id="plGlass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9fd0ff"/><stop offset="1" stop-color="#2a4f8f"/></linearGradient>
-      <radialGradient id="plSpin" cx=".35" cy=".35" r=".7"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#8d939e"/></radialGradient>
-      <g id="plane">
-        <!-- lower wing (behind) -->
-        <path d="M40 50H80L72 63H30Z" fill="url(#plWingLow)"/>
-        <!-- tail: fin and stabiliser -->
-        <path d="M24 34 12 13H23L36 31Z" fill="url(#plWing)"/><path d="M13 14H23" stroke="#fff3" stroke-width="2"/>
-        <path d="M20 42 6 50H20L28 45Z" fill="url(#plWingLow)"/>
-        <!-- landing gear -->
-        <path d="M66 49 61 63M80 49 85 63" stroke="#6b4a2a" stroke-width="2.5"/>
-        <circle cx="61" cy="65" r="5.5" fill="#2a2a33"/><circle cx="61" cy="65" r="2" fill="#c9ccd4"/>
-        <circle cx="86" cy="65" r="5.5" fill="#2a2a33"/><circle cx="86" cy="65" r="2" fill="#c9ccd4"/>
-        <!-- fuselage -->
-        <path d="M16 40C16 34 26 30 42 30H88C98 30 105 34 107 40C105 46 98 50 88 50H42C26 50 16 46 16 40Z" fill="url(#plBody)"/>
-        <path d="M30 34C40 32 70 32 92 33" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>
-        <path d="M84 30.5C86 36 86 44 84 49.5" stroke="#e2672c" stroke-width="5"/>
-        <!-- cockpit glass -->
-        <path d="M56 31C57 23 68 21 74 31Z" fill="url(#plGlass)"/><path d="M60 28C62 25 66 24 68 25" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".8"/>
-        <!-- upper wing (in front) with struts -->
-        <path d="M52 23 48 49M82 23 78 49" stroke="#7a522c" stroke-width="2"/>
-        <path d="M44 22H90L98 13H54Z" fill="url(#plWing)"/><path d="M44 22H90V24.5H44Z" fill="#a9561c"/>
-        <path d="M56 14.5H95" stroke="#fff" stroke-width="1.5" opacity=".55"/>
-        <!-- nose, spinner and a spinning propeller -->
-        <ellipse cx="106" cy="40" rx="4" ry="9.5" fill="#8a5a32"/>
-        <ellipse cx="112" cy="40" rx="2.4" ry="20" fill="rgb(255 255 255 / .16)"/>
-        <path d="M111 40 110 22M111 40 112 58" stroke="#5a3d22" stroke-width="2.6" stroke-linecap="round"/>
-        <circle cx="111" cy="40" r="4.2" fill="url(#plSpin)"/>
-      </g></defs></svg>
+    <img class="plane" src="plane1.webp" alt="" style="left:3%;top:58%">
+    <img class="plane" src="plane2.webp" alt="" style="right:4%;top:10%">
   </div>
   <template id="heroArt"><svg viewBox="0 0 220 220" aria-hidden="true">
     <defs><linearGradient id="pg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8a5c"/><stop offset="1" stop-color="#e5383b"/></linearGradient>
