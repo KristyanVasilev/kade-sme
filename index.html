@@ -107,7 +107,8 @@ dialog p{margin:0 0 16px;color:var(--muted)}
   </div>
   <section class="card center" id="card"></section>
 </main>
-<dialog id="modal"><h2 id="mTitle"></h2><p id="mText"></p><form method="dialog"><button class="primary" autofocus>Разбрах</button></form></dialog>
+<dialog id="modal"><h2 id="mTitle"></h2><p id="mText"></p><form method="dialog" class="row">
+  <button id="mCancel" value="cancel" hidden>Отказ</button><button id="mOk" value="ok" class="primary" autofocus>Разбрах</button></form></dialog>
 
 <script src="config.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -162,7 +163,11 @@ const $=id=>document.getElementById(id), card=$("card");
 function el(tag,attrs={},...kids){const e=document.createElement(tag);
   for(const[k,v]of Object.entries(attrs))v==null?0:k==="on"?e.addEventListener("click",v):k==="text"?e.textContent=v:e.setAttribute(k,v);
   e.append(...kids.filter(Boolean));return e;}
-function modal(title,text){$("mTitle").textContent=title;$("mText").textContent=text;if(!$("modal").open)$("modal").showModal();}
+function modal(title,text,okText,cancel){const d=$("modal");
+  $("mTitle").textContent=title;$("mText").textContent=text;$("mOk").textContent=okText||"Разбрах";$("mCancel").hidden=!cancel;
+  if(!d.open){d.returnValue="";d.showModal();}
+  return new Promise(res=>d.addEventListener("close",()=>res(d.returnValue==="ok"),{once:true}));}
+const confirmBox=(title,text,okText)=>modal(title,text,okText,true);
 const fmt=n=>n.toLocaleString("bg");
 const mmss=s=>s>=60?`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`:`${s} сек`;
 
@@ -223,6 +228,13 @@ function totals(ps,upto){return ps.map(p=>{let s=0;for(let r=0;r<upto;r++){const
 const revealedRounds=()=>!state?0:state.reveal?state.round+1:Math.min(state.round,total());
 // Move the shared state only from the exact state we saw, so two clicks never skip a round.
 function advance(from,patch){roomRef.child("state").transaction(s=>s&&s.id===from.id&&s.round===from.round&&!!s.reveal===!!from.reveal?{...s,...patch}:undefined);}
+// End for everyone: show the final ranking of the rounds already revealed, or go back to the lobby if none were.
+async function endGame(){
+  const at=state;if(!at)return;
+  if(!await confirmBox("Прекратяване на играта","Играта ще спре за всички в стаята и ще видите класирането до момента.","Прекрати"))return;
+  const n=revealedRounds();
+  roomRef.child("state").transaction(s=>!s||s.id!==at.id?undefined:n?{...s,round:n,rounds:n,reveal:false}:null);
+}
 function submit(x){if(state)roomRef.child(`players/${pid}/g/${state.id}/${state.round}`).set(x);pending=null;$("mapwrap").classList.remove("big");}
 
 roomRef.child("state").on("value",s=>{state=s.val();render();});
@@ -403,7 +415,8 @@ function render(){
     $("mapwrap").hidden=false;$("players").hidden=false;$("home").hidden=!ready;
     $("players").replaceChildren(el("span",{class:"lbl",text:"Класиране"}),
       rankList(totals(ps,revealedRounds()),p=>guessOf(p,state.round)?el("span",{class:"tick",text:"✓"}):el("span",{class:"d",text:"…"})),
-      el("button",{style:"margin-top:8px;width:100%;padding:6px 10px;font-size:13px",text:"Покажи резултата",on:()=>advance(state,{reveal:true})}));
+      el("button",{style:"margin-top:8px;width:100%;padding:6px 10px;font-size:13px",text:"Покажи резултата",on:()=>advance(state,{reveal:true})}),
+      el("button",{style:"margin-top:6px;width:100%;padding:6px 10px;font-size:13px",text:"Прекрати играта",on:endGame}));
     if(ready&&view!==lastView){
       startPov={heading:Math.floor(Math.random()*360),pitch:0};
       pano.setPano(loc.p);pano.setPov(startPov);pano.setZoom(0);pano.setVisible(true);
@@ -434,7 +447,8 @@ function render(){
       el("div",{class:"row"},
         el("button",{class:"primary",text:state.round+1<total()?"Следващ рунд":"Към финала",
           on:()=>advance(state,{round:state.round+1,reveal:false,endsAt:now()+(state.timer||60)*1000})}),
-        el("a",{class:"btn",href:`https://www.google.com/maps/@?api=1&map_action=pano&pano=${encodeURIComponent(loc.p)}`,target:"_blank",rel:"noopener",text:"Виж в Google Maps ↗"})));
+        el("a",{class:"btn",href:`https://www.google.com/maps/@?api=1&map_action=pano&pano=${encodeURIComponent(loc.p)}`,target:"_blank",rel:"noopener",text:"Виж в Google Maps ↗"}),
+        state.round+1<total()?el("button",{text:"Прекрати играта",on:endGame}):""));
   }
   if(view===lastView){card.scrollTop=keep.card;if($("ctry"))$("ctry").scrollTop=keep.ctry;}
   lastView=view;
