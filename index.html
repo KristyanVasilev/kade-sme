@@ -35,11 +35,8 @@ body.home header{border-bottom-color:transparent}
 @keyframes tw{50%{opacity:.35;transform:scale(.8)}}
 .mini-pin{position:absolute;width:26px;filter:drop-shadow(0 4px 8px rgb(0 0 0 / .4))}
 .compass{position:absolute;left:24px;bottom:24px;width:84px;height:84px}
-.globe{position:absolute;right:-90px;bottom:-110px;width:min(380px,55vw);aspect-ratio:1;border-radius:50%;
-  background:radial-gradient(circle at 50% 50%,transparent 62%,rgb(124 108 255 / .35) 70%,transparent 72%),
-    radial-gradient(rgb(200 190 255 / .55) 1.1px,transparent 1.6px) 0 0/9px 9px,
-    radial-gradient(circle at 35% 30%,#4b55d6 0%,#272a8f 40%,#120f4f 75%);
-  box-shadow:0 0 80px 10px rgb(110 90 255 / .45),inset -30px -40px 80px rgb(5 4 30 / .8)}
+.globe{position:absolute;right:-90px;bottom:-110px;width:min(400px,58vw);aspect-ratio:1;border-radius:50%;display:block;
+  box-shadow:0 0 90px 14px rgb(110 90 255 / .4)}
 .card.hero{max-width:760px;display:grid;grid-template-columns:1.4fr 1fr;gap:8px 24px;align-items:center;padding:28px 32px;border-radius:18px;
   background:rgb(28 30 92 / .55);border:1px solid rgb(255 255 255 / .16);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   box-shadow:0 20px 60px rgb(5 4 40 / .6)}
@@ -48,7 +45,14 @@ body.home header{border-bottom-color:transparent}
 .hero-title span{display:block}.hero-title .y{color:var(--accent)}
 .hero p{color:#d6dbff}.hero p b{color:#fff}
 .hero input{background:rgb(10 12 48 / .7);border-color:rgb(255 255 255 / .18);padding:13px 16px}
-.hero button.primary{border-radius:999px;padding:12px 28px;font-size:16px;box-shadow:0 6px 24px rgb(255 199 39 / .45)}
+/* raised 3D pill: light top, darker lip underneath, warm glow; presses down on click */
+.hero button.primary{border-radius:999px;padding:12px 30px;font-size:16px;border:0;color:#3a2600;
+  background:linear-gradient(180deg,#ffe27a 0%,#ffc727 45%,#f2a900 100%);
+  box-shadow:inset 0 2px 0 rgb(255 255 255 / .65),inset 0 -3px 0 rgb(170 100 0 / .35),0 5px 0 #b97f00,0 10px 26px rgb(255 190 30 / .5);
+  transform:translateY(-2px);transition:transform .08s,box-shadow .08s}
+.hero button.primary:hover{filter:brightness(1.05)}
+.hero button.primary:active{transform:translateY(2px);
+  box-shadow:inset 0 2px 0 rgb(255 255 255 / .5),inset 0 -2px 0 rgb(170 100 0 / .35),0 1px 0 #b97f00,0 4px 14px rgb(255 190 30 / .45)}
 .hero-art svg{width:100%;height:auto;max-height:220px;display:block}
 @media (max-width:700px){
   .card.hero{grid-template-columns:1fr;padding:22px 20px}
@@ -143,7 +147,7 @@ dialog p{margin:0 0 16px;color:var(--muted)}
     <svg class="compass" viewBox="0 0 84 84"><circle cx="42" cy="42" r="40" fill="#1a1d5c" stroke="#8d93d8" stroke-width="2"/><circle cx="42" cy="42" r="31" fill="none" stroke="#3a3f8f"/>
       <g fill="#c9ceff" font-family="sans-serif" font-size="9" font-weight="700" text-anchor="middle"><text x="42" y="16">N</text><text x="42" y="75">S</text><text x="71" y="45">E</text><text x="13" y="45">W</text></g>
       <path d="M42 20l6 22h-12z" fill="#ff5a4e"/><path d="M42 64l6-22h-12z" fill="#dfe3ff"/><circle cx="42" cy="42" r="3" fill="#1a1d5c" stroke="#fff"/></svg>
-    <div class="globe"></div>
+    <canvas class="globe" id="globe"></canvas>
   </div>
   <template id="heroArt"><svg viewBox="0 0 220 220" aria-hidden="true">
     <defs><linearGradient id="pg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8a5c"/><stop offset="1" stop-color="#e5383b"/></linearGradient>
@@ -308,12 +312,20 @@ roomRef.child("players").on("value",s=>{players=s.val()||{};
   render();});
 const setS=patch=>roomRef.child("settings").set({...settings,...patch});
 
+let onConnected=null;
 function join(){
   joined=true;
   const me=roomRef.child("players/"+pid);
-  db.ref(".info/connected").on("value",s=>{if(!s.val())return;
+  onConnected=db.ref(".info/connected").on("value",s=>{if(!s.val())return;
     me.child("on").onDisconnect().set(false);
     me.update({n:name,on:true,t:firebase.database.ServerValue.TIMESTAMP});});
+}
+// Back to the start screen: leave the room (others stop seeing you) and stop re-joining on reconnect.
+function leave(){
+  joined=false;
+  if(onConnected){db.ref(".info/connected").off("value",onConnected);onConnected=null;}
+  const on=roomRef.child(`players/${pid}/on`);on.onDisconnect().cancel();on.set(false);
+  render();
 }
 
 // ---- random places with official Street View, by difficulty
@@ -406,6 +418,15 @@ setInterval(()=>{
 
 // ---- start-screen background: the world drawn from the same borders and cities the game uses
 let bgDrawn=false;
+// Add every land ring to the current path. Rings crossing the 180° line (Russia, Fiji) are unwrapped
+// and drawn again shifted by 360°; Antarctica (010) wraps the pole and is skipped.
+function traceLand(g,X,Y){
+  for(const f of LAND)if(f.id!=="010")for(const p of polys(f.geometry))for(const ring of p){
+    let prev=null,shift=0,max=-999;
+    const pts=ring.map(([x,y])=>{if(prev!==null){if(x-prev>180)shift-=360;else if(prev-x>180)shift+=360;}prev=x;max=Math.max(max,x+shift);return[x+shift,y];});
+    for(const off of max>180?[0,-360]:[0]){pts.forEach(([x,y],i)=>i?g.lineTo(X(x+off),Y(y)):g.moveTo(X(x+off),Y(y)));g.closePath();}
+  }
+}
 function drawBg(){
   const c=$("bgmap"), W=c.clientWidth, H=c.clientHeight;
   if(!LAND.length||!W||!H)return;
@@ -423,12 +444,7 @@ function drawBg(){
     if(lng%60===0)g.fillText(lng?`${Math.abs(lng)}°${lng>0?"E":"W"}`:"0°",X(lng)+4,H-8);}
   const grad=g.createLinearGradient(0,0,W,H);grad.addColorStop(0,"#3b2f97");grad.addColorStop(1,"#5a46c4");
   g.save();g.shadowColor="rgb(140 100 255 / .55)";g.shadowBlur=24;g.fillStyle=grad;g.beginPath();
-  // unwrap rings that cross the 180° line (Russia, Fiji, Antarctica) and draw the overflow on the other side too
-  for(const f of LAND)if(f.id!=="010")for(const p of polys(f.geometry))for(const ring of p){   // 010 = Antarctica: wraps the pole, off-screen anyway
-    let prev=null,shift=0,max=-999;
-    const pts=ring.map(([x,y])=>{if(prev!==null){if(x-prev>180)shift-=360;else if(prev-x>180)shift+=360;}prev=x;max=Math.max(max,x+shift);return[x+shift,y];});
-    for(const off of max>180?[0,-360]:[0]){pts.forEach(([x,y],i)=>i?g.lineTo(X(x+off),Y(y)):g.moveTo(X(x+off),Y(y)));g.closePath();}
-  }
+  traceLand(g,X,Y);
   g.fill("evenodd");g.restore();
   // city lights: small dots, every tenth one with a soft glow
   let i=0;
@@ -439,6 +455,47 @@ function drawBg(){
   bgDrawn=true;
 }
 addEventListener("resize",()=>{bgDrawn=false;if(document.body.classList.contains("home"))drawBg();});
+
+// ---- dotted globe: land dots from the same borders, orthographic view, slow spin
+let globeDots=null, globeLng=110, globeRun=false;
+function landDots(){
+  const m=document.createElement("canvas");m.width=720;m.height=360;const g=m.getContext("2d");g.fillStyle="#fff";g.beginPath();
+  traceLand(g,x=>(x+180)*2,y=>(90-y)*2);g.fill("evenodd");const px=g.getImageData(0,0,720,360).data, out=[];
+  for(let lat=-78;lat<=80;lat+=2.4){const step=2.4/Math.max(.2,Math.cos(rad(lat)));
+    for(let lng=-180;lng<180;lng+=step){const i=((Math.round((90-lat)*2)*720)+Math.round((lng+180)*2))*4;out.push([rad(lat),rad(lng),px[i+3]>0]);}}
+  return out;
+}
+function drawGlobe(){
+  const c=$("globe"), S=c.clientWidth;
+  if(!S||!LAND.length){globeRun=false;return;}
+  if(!globeDots)globeDots=landDots();
+  const dpr=Math.min(2,window.devicePixelRatio||1);if(c.width!==Math.round(S*dpr)){c.width=c.height=Math.round(S*dpr);}
+  const g=c.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,S,S);
+  const R=S/2-2, cx=S/2, cy=S/2, l0=rad(globeLng), p0=rad(-12), sp0=Math.sin(p0), cp0=Math.cos(p0);
+  // translucent sphere, lit from the upper left
+  const sea=g.createRadialGradient(cx-R*.35,cy-R*.4,R*.05,cx,cy,R);
+  sea.addColorStop(0,"rgb(120 110 255 / .45)");sea.addColorStop(.6,"rgb(45 40 150 / .45)");sea.addColorStop(1,"rgb(20 16 80 / .6)");
+  g.fillStyle=sea;g.beginPath();g.arc(cx,cy,R,0,7);g.fill();
+  const proj=(lat,lng)=>{const cl=Math.cos(lat),d=lng-l0;
+    return[cx+R*cl*Math.sin(d),cy-R*(cp0*Math.sin(lat)-sp0*cl*Math.cos(d)),sp0*Math.sin(lat)+cp0*cl*Math.cos(d)];};
+  // faint graticule
+  g.strokeStyle="rgb(190 180 255 / .12)";g.lineWidth=1;
+  const line=pts=>{g.beginPath();let on=false;for(const[a,b]of pts){const[x,y,z]=proj(a,b);if(z>0){on?g.lineTo(x,y):g.moveTo(x,y);on=true;}else on=false;}g.stroke();};
+  for(let la=-60;la<=60;la+=30)line(Array.from({length:73},(_,i)=>[rad(la),rad(i*5-180)]));
+  for(let lo=-180;lo<180;lo+=30)line(Array.from({length:37},(_,i)=>[rad(i*5-90),rad(lo)]));
+  // dots: bright on land, faint on sea, dimmer towards the edge
+  for(const[lat,lng,land]of globeDots){const[x,y,z]=proj(lat,lng);if(z<=0)continue;
+    const a=land?.35+.65*z:.06+.12*z, r=land?.8+1.3*z:.6+.6*z;
+    g.fillStyle=land?`rgb(236 232 255 / ${a.toFixed(2)})`:`rgb(190 180 255 / ${a.toFixed(2)})`;g.fillRect(x-r/2,y-r/2,r,r);}
+  const rim=g.createRadialGradient(cx,cy,R*.78,cx,cy,R);rim.addColorStop(0,"rgb(150 120 255 / 0)");rim.addColorStop(1,"rgb(190 160 255 / .6)");
+  g.fillStyle=rim;g.beginPath();g.arc(cx,cy,R,0,7);g.fill();
+}
+function spinGlobe(){
+  if(!document.body.classList.contains("home")){globeRun=false;return;}
+  drawGlobe();
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches){globeRun=false;return;}
+  globeLng=(globeLng+.08)%360;requestAnimationFrame(spinGlobe);
+}
 
 // ---- UI
 function rankList(ps,extra){return el("ol",{},...ps.map((p,i)=>el("li",{},el("span",{class:"pos",text:i+1+"."}),el("span",{class:"dot",style:"background:"+p.c}),
@@ -507,7 +564,8 @@ function render(){
       el("div",{class:"usage"},...meter("Street View",usage.sv,LIMITS.sv),...meter("Карти",usage.maps,LIMITS.maps))));
     card.append(el("div",{class:"row"},
       el("button",{class:"primary",disabled:busy||!ready||!DATA?"":null,text:busy||(state?"Нова игра":"Започни игра"),on:startGame}),
-      el("button",{text:"Копирай линка",on:()=>$("share").click()})));
+      el("button",{text:"Копирай линка",on:()=>$("share").click()}),
+      el("button",{text:"← Назад",style:"margin-left:auto",on:leave})));
     usageWarn();
   }
   else if(!state.reveal){
@@ -554,6 +612,7 @@ function render(){
   }
   document.body.classList.toggle("home",view==="join");
   if(view==="join"&&!bgDrawn)requestAnimationFrame(drawBg);
+  if(view==="join"&&!globeRun&&LAND.length){globeRun=true;requestAnimationFrame(spinGlobe);}
   if(view===lastView){card.scrollTop=keep.card;if($("ctry"))$("ctry").scrollTop=keep.ctry;}
   lastView=view;
 }
