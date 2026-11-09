@@ -48,7 +48,7 @@ body.home header{border-bottom-color:transparent}
 .lobby-title{display:flex;flex-direction:column;gap:6px;min-width:0}
 .glass .lobby-head h2{font:900 clamp(30px,4.5vw,44px)/1 var(--heavy);text-transform:uppercase;letter-spacing:.01em}
 .glass p{color:#d6dbff}
-.lobby-art{width:110px;flex:none;margin-left:auto}.lobby-art svg{width:100%;height:auto;display:block}
+.lobby-art{width:150px;flex:none;margin-left:auto;margin-block:-10px}.lobby-art img{width:100%;height:auto;display:block;filter:drop-shadow(0 8px 14px rgb(0 0 0 / .35))}
 .prows{gap:8px}
 .prow{padding:10px 12px;border-radius:12px;background:rgb(10 12 48 / .45);border:1px solid rgb(255 255 255 / .12);gap:12px}
 .prow .nm{display:flex;flex-direction:column;white-space:normal}
@@ -89,7 +89,7 @@ body.home header{border-bottom-color:transparent}
   .orbit{display:none}
   .cols{grid-template-columns:1fr}
   .actions{grid-template-columns:1fr 1fr}.actions .back{grid-column:1/-1;order:3}
-  .card.glass{padding:18px}.lobby-art{width:76px}
+  .card.glass{padding:18px}.lobby-art{width:96px}
   .plane{display:none}
 }
 #round{font:700 18px/1 var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
@@ -198,13 +198,6 @@ dialog p{margin:0 0 16px;color:var(--muted)}
     <!-- traveler: 3D render with the white background cut out; his raised hand touches the pin -->
     <ellipse cx="58" cy="194" rx="30" ry="5" fill="rgb(0 0 0 / .35)"/>
     <image href="traveler.webp" x="25" y="43" width="81" height="150"/>
-  </svg></template>
-  <template id="lobbyArt"><svg viewBox="0 0 120 90" aria-hidden="true">
-    <rect x="18" y="58" width="84" height="26" rx="8" fill="#2c3590" stroke="rgb(255 255 255 / .25)"/>
-    <g stroke="#fff" stroke-width="2"><circle cx="34" cy="30" r="15" fill="#ff8a5c"/><circle cx="86" cy="30" r="15" fill="#4fd1ff"/><circle cx="60" cy="22" r="17" fill="#ffc727"/></g>
-    <g fill="#1b1f5c"><circle cx="34" cy="28" r="5"/><circle cx="86" cy="28" r="5"/><circle cx="60" cy="19" r="6"/></g>
-    <path d="M24 46a10 9 0 0 1 20 0zM76 46a10 9 0 0 1 20 0zM48 42a12 10 0 0 1 24 0z" fill="#1b1f5c"/>
-    <rect x="46" y="64" width="28" height="14" rx="3" fill="#8f9cff"/><text x="104" y="16" fill="#ffc727" font-size="12">✦</text>
   </svg></template>
   <div id="sv"></div>
   <div id="players" hidden></div>
@@ -590,7 +583,7 @@ function render(){
     pano&&pano.setVisible(false);
     card.classList.add("glass");
     const head=(title,sub)=>el("div",{class:"lobby-head"},el("div",{class:"lobby-title"},el("h2",{text:title}),sub?el("p",{text:sub}):""),
-      el("div",{class:"lobby-art"},$("lobbyArt").content.cloneNode(true)));
+      el("div",{class:"lobby-art"},el("img",{src:"lobby.webp",alt:""})));
     if(state){
       const t=totals(ps,total());
       card.append(head(t[0]?`🏆 ${t[0].n} печели!`:"Финал",`Край на играта · ${total()} ${total()===1?"рунд":"рунда"}`),rankList(t));
