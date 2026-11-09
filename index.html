@@ -61,6 +61,33 @@ body.home header{border-bottom-color:transparent}
 .prow{padding:10px 12px;border-radius:12px;background:rgb(10 12 48 / .45);border:1px solid rgb(255 255 255 / .12);gap:12px}
 .prow .nm{display:flex;flex-direction:column;white-space:normal}
 .prow .st{font-size:13px;color:var(--accent)}
+/* round results card */
+.card.glass.reveal{max-width:600px;gap:14px;max-height:calc(100% - 32px)}
+.reveal-head{display:flex;align-items:center;gap:14px}
+.reveal-head h2{font:800 26px/1.1 var(--body);text-transform:uppercase;letter-spacing:.5px;color:#fff}
+.flagpin{position:relative;width:40px;height:48px;flex:none;filter:drop-shadow(0 6px 10px rgb(0 0 0 / .45))}
+.flagpin svg{width:100%;height:100%;display:block}
+.flagpin img{position:absolute;left:8px;top:6px;width:24px;height:24px;border-radius:50%;object-fit:cover;border:2px solid #fff}
+.rrows{gap:4px}
+.rrow,.srow{display:grid;align-items:center;gap:10px;padding:7px 10px;border-radius:12px;font-variant-numeric:tabular-nums}
+.rrow{grid-template-columns:auto 1fr auto 84px}
+.srow{grid-template-columns:2ch 28px 1fr auto}
+.rrow .nm,.srow .nm{font-weight:600;color:#fff;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rrow .km{color:var(--text-muted-light);font-size:14px}
+.rrow .pts{text-align:right;font-weight:800;font-size:17px;color:#7cf29a}
+.rrow.best .pts::before{content:"🔥 "}
+.rrow.me .pts{color:var(--accent)}
+.me{background:rgb(255 199 39 / .08);box-shadow:inset 0 0 0 1.5px rgb(255 175 60 / .85)}
+.av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;color:#fff;border:2px solid rgb(255 255 255 / .85)}
+.trophy{width:28px;text-align:center;font-size:20px}
+.standings{display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:14px;background:rgb(255 255 255 / .05);border:1px solid rgb(255 255 255 / .1)}
+.srow .pos{color:var(--text-muted-dark);font-weight:600}
+.srow .tot{font-weight:800;font-size:17px;color:#fff}
+.srow.me .tot{color:var(--accent)}
+.reveal .row .btn3d{border-radius:999px;padding:12px 26px}
+.reveal .btn-glass{border-radius:999px;padding:12px 22px}
+.danger-link{align-self:flex-start;background:none;border:0;padding:4px 2px;font-weight:600;color:var(--text-muted-light)}
+.danger-link:hover,.danger-link:focus-visible{color:var(--bad)}
 .prow .score{margin-left:auto;flex:none;font-size:18px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
 .prow.win{background:rgb(255 199 39 / .1);border-color:rgb(255 199 39 / .55)}
 .prow.win .score{font-size:22px}
@@ -215,6 +242,8 @@ dialog p{margin:0 0 16px;color:var(--muted)}
     <ellipse cx="58" cy="194" rx="30" ry="5" fill="rgb(0 0 0 / .35)"/>
     <image href="traveler.webp" x="25" y="43" width="81" height="150"/>
   </svg></template>
+  <template id="pinTpl"><svg viewBox="0 0 40 48" aria-hidden="true"><defs><linearGradient id="fpg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6b5e"/><stop offset="1" stop-color="#c81e2b"/></linearGradient></defs>
+    <path d="M20 1C9.5 1 1 9.3 1 19.6 1 33 20 47 20 47s19-14 19-27.4C39 9.3 30.5 1 20 1z" fill="url(#fpg)"/><path d="M8 10c3-5 9-7 14-6" stroke="#fff" stroke-opacity=".5" stroke-width="2" fill="none" stroke-linecap="round"/></svg></template>
   <div id="sv"></div>
   <div id="players" hidden></div>
   <button id="home" type="button" hidden>⟲ Към началото</button>
@@ -253,6 +282,11 @@ const COUNTRIES=[["008","Албания","eu"],["040","Австрия","eu"],["0
   ["840","САЩ","na"],["124","Канада","na"],["484","Мексико","na"],["320","Гватемала","na"],["214","Доминиканска република","na"],["630","Пуерто Рико","na"],["591","Панама","na"],
   ["076","Бразилия","sa"],["032","Аржентина","sa"],["152","Чили","sa"],["170","Колумбия","sa"],["604","Перу","sa"],["218","Еквадор","sa"],["858","Уругвай","sa"],["068","Боливия","sa"],
   ["036","Австралия","oc"],["554","Нова Зеландия","oc"]];
+// ISO numeric -> alpha-2, for the flag images in the round results
+const A2=Object.fromEntries(("008al 040at 056be 100bg 191hr 203cz 208dk 233ee 246fi 250fr 276de 300gr 348hu 352is 372ie 380it 428lv 440lt 442lu 499me "+
+  "528nl 807mk 578no 616pl 620pt 642ro 688rs 703sk 705si 724es 752se 756ch 804ua 826gb 643ru 792tr 392jp 410kr 158tw 764th 458my 360id 608ph "+
+  "116kh 418la 356in 144lk 050bd 064bt 496mn 398kz 417kg 376il 400jo 784ae 634qa 422lb 710za 072bw 426ls 748sz 516na 404ke 800ug 646rw 686sn "+
+  "288gh 566ng 788tn 450mg 840us 124ca 484mx 320gt 214do 630pr 591pa 076br 032ar 152cl 170co 604pe 218ec 858uy 068bo 036au 554nz").split(" ").map(s=>[s.slice(0,3),s.slice(3)]));
 const NAME=Object.fromEntries(COUNTRIES.map(c=>[c[0],c[1]])), CONT_OF=Object.fromEntries(COUNTRIES.map(c=>[c[0],c[2]]));
 const DIFF={easy:["Лесна","улици в големи градове"],medium:["Средна","покрайнини, села, пътища"],hard:["Трудна","където и да е в държавата"]};
 const DEFAULTS={rounds:5,timer:60,diff:"medium",conts:[],countries:[]};   // empty list = all
@@ -698,7 +732,7 @@ function render(){
   else{
     view="reveal"+state.id+"-"+state.round;
     const loc=state.locs[state.round], truth=[loc.lat,loc.lng];
-    $("mapwrap").hidden=false;$("mapwrap").classList.add("full");card.className="card";
+    $("mapwrap").hidden=false;$("mapwrap").classList.add("full");card.className="card glass reveal";
     const rows=ps.map(p=>{const x=guessOf(p,state.round);const d=x?dist(x,truth):null;return{...p,x,d,pt:x?points(d):0}}).sort((a,b)=>b.pt-a.pt);
     if(ready){
       clearMarks();
@@ -708,15 +742,24 @@ function render(){
         marks.push(new google.maps.Polyline({map:gmap,path:[{lat:p.x[0],lng:p.x[1]},{lat:truth[0],lng:truth[1]}],geodesic:true,strokeColor:p.c,strokeWeight:2}));});
       if(view!==lastView)setTimeout(()=>gmap.fitBounds(b,60),50);
     }
-    card.append(el("h2",{text:`Рунд ${state.round+1}${NAME[loc.c]?" · "+NAME[loc.c]:""}`}),
-      el("ul",{},...rows.map(p=>el("li",{},el("span",{class:"dot",style:"background:"+p.c}),el("span",{class:"nm",text:p.n+(p.me?" (ти)":"")}),
-        el("span",{class:"d",text:p.d==null?"не позна":fmt(Math.round(p.d))+" км"}),el("span",{class:"sc",text:"+"+p.pt})))),
-      el("div",{class:"field"},el("span",{class:"lbl",text:"Класиране"}),rankList(totals(ps,state.round+1))),
+    const av=p=>el("span",{class:"av",style:"background:"+p.c,text:(p.n.trim()[0]||"?").toUpperCase()});
+    const a2=A2[loc.c];
+    const standings=totals(ps,state.round+1);
+    card.append(
+      el("div",{class:"reveal-head"},el("h2",{text:`Рунд ${state.round+1}${NAME[loc.c]?" · "+NAME[loc.c]:""}`}),
+        a2?el("span",{class:"flagpin"},$("pinTpl").content.cloneNode(true),el("img",{src:`https://flagcdn.com/w80/${a2}.png`,alt:"Знаме: "+NAME[loc.c]})):""),
+      el("ul",{class:"rrows"},...rows.map((p,i)=>el("li",{class:"rrow"+(p.me?" me":"")+(i===0&&p.pt>0?" best":"")},
+        av(p),el("span",{class:"nm",text:p.n+(p.me?" (ти)":"")}),
+        el("span",{class:"km",text:p.d==null?"не позна":fmt(Math.round(p.d))+" км"}),el("span",{class:"pts",text:"+"+fmt(p.pt)})))),
+      el("div",{class:"standings"},el("span",{class:"lbl",text:"Класиране"}),
+        el("ul",{class:"rrows"},...standings.map((p,i)=>el("li",{class:"srow"+(p.me?" me":"")},
+          el("span",{class:"pos",text:i+1+"."}),i===0?el("span",{class:"trophy",text:"🏆"}):av(p),
+          el("span",{class:"nm",text:p.n+(p.me?" (ти)":"")}),el("span",{class:"tot",text:fmt(p.total)}))))),
       el("div",{class:"row"},
-        el("button",{class:"primary",text:state.round+1<total()?"Следващ рунд":"Към финала",
+        el("button",{class:"primary btn3d",text:state.round+1<total()?"Следващ рунд ⇒":"Към финала ⇒",
           on:()=>advance(state,{round:state.round+1,reveal:false,endsAt:now()+(state.timer||60)*1000})}),
-        el("a",{class:"btn",href:`https://www.google.com/maps/@?api=1&map_action=pano&pano=${encodeURIComponent(loc.p)}`,target:"_blank",rel:"noopener",text:"Виж в Google Maps ↗"}),
-        state.round+1<total()?el("button",{text:"Прекрати играта",on:endGame}):""));
+        el("a",{class:"btn btn-glass",href:`https://www.google.com/maps/@?api=1&map_action=pano&pano=${encodeURIComponent(loc.p)}`,target:"_blank",rel:"noopener",text:"Виж в Google Maps ↗"})),
+      state.round+1<total()?el("button",{class:"danger-link",text:"Прекрати играта ⇥",on:endGame}):"");
   }
   const home=view==="join"||view.startsWith("lobby");
   document.body.classList.toggle("home",home);
