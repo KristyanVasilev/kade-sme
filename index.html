@@ -4,14 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Къде сме?</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Atkinson+Hyperlegible:wght@400;700&family=Montserrat:ital,wght@0,900;1,900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,900&display=swap">
 <style>
 :root{
   /* night-navy palette: deep indigo ground, royal-blue panels, yellow accent */
   --bg:#0a0e33; --fg:#f2f4ff; --muted:#9ba4d9; --card:#141b55; --line:#2a3478;
   --accent:#ffc727; --accent-fg:#1a1400; --blue:#3b5bfd; --ok:#36d68f; --warn:#ff9f43; --bad:#ff5c7a;
-  --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
-  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --display:"Montserrat","Inter","Roboto",system-ui,sans-serif;
+  --body:"Montserrat","Inter","Roboto",system-ui,sans-serif;   /* one font for the whole interface */
+  --text-muted-light:#B4B9D6; --text-muted-dark:#7A82B8; --text-dark:#12142B;
   --heavy:"Montserrat","Arial Black",Impact,sans-serif;
   color-scheme:dark;
 }
@@ -46,8 +47,15 @@ body.home header{border-bottom-color:transparent}
 .card.glass>*{flex-shrink:0}
 .lobby-head{display:flex;align-items:center;gap:16px}
 .lobby-title{display:flex;flex-direction:column;gap:6px;min-width:0}
-.glass .lobby-head h2{font:900 clamp(30px,4.5vw,44px)/1 var(--heavy);text-transform:uppercase;letter-spacing:.01em}
-.glass p{color:#d6dbff}
+/* lobby type scale */
+.glass .lobby-head h2{font:800 32px/1.1 var(--body);text-transform:uppercase;letter-spacing:.5px;color:#fff}
+.card.glass p{color:var(--text-muted-light);font-size:14px;font-weight:400;line-height:1.5}
+.card.glass p.note{font-size:11px;font-weight:500;color:var(--text-muted-dark)}
+.glass .lbl{font-size:12px;font-weight:600;color:var(--text-muted-dark);letter-spacing:1px}
+.glass .prow b{font-size:15px;font-weight:600;color:#fff}
+.glass .chip{font-size:14px;font-weight:500;color:#fff}
+.glass .chip[aria-pressed="true"]{font-weight:700;color:var(--text-dark)}
+.glass .note,.glass .usage{font-size:11px;font-weight:500;color:var(--text-muted-dark);text-transform:uppercase;letter-spacing:.3px}
 .lobby-art{width:150px;flex:none;margin-left:auto;margin-block:-10px}.lobby-art img{width:100%;height:auto;display:block;filter:drop-shadow(0 8px 14px rgb(0 0 0 / .35))}
 .prows{gap:8px}
 .prow{padding:10px 12px;border-radius:12px;background:rgb(10 12 48 / .45);border:1px solid rgb(255 255 255 / .12);gap:12px}
@@ -57,7 +65,7 @@ body.home header{border-bottom-color:transparent}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px 28px}
 .col{display:flex;flex-direction:column;gap:16px;min-width:0}
 .glass .chip{background:rgb(10 12 48 / .55);border-color:rgb(255 255 255 / .14)}
-.glass .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.glass .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--text-dark);font-weight:700}
 .glass #ctry{max-height:180px}
 .glass .meter{height:8px;border-radius:4px;background:rgb(255 255 255 / .1)}
 .glass .meter>i{background:linear-gradient(90deg,#3b5bfd,#4fd1ff);border-radius:4px}
@@ -92,8 +100,8 @@ body.home header{border-bottom-color:transparent}
   .card.glass{padding:18px}.lobby-art{width:96px}
   .plane{display:none}
 }
-#round{font:700 18px/1 var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-#timer{font:800 24px/1 var(--display);font-variant-numeric:tabular-nums;letter-spacing:.04em}
+#round{font:700 14px/1 var(--display);letter-spacing:1px;text-transform:uppercase;color:var(--text-muted-light)}
+#timer{font:800 22px/1 var(--display);font-variant-numeric:tabular-nums}
 #timer.low{color:var(--accent)}
 #who{margin-left:auto;font-size:14px;color:var(--muted)}
 main{position:relative;flex:1;min-height:0}
@@ -116,7 +124,7 @@ main{position:relative;flex:1;min-height:0}
   box-shadow:0 6px 24px rgb(0 0 0 / .4)}
 .card.center{top:50%;bottom:auto;transform:translateY(-50%);max-height:calc(100% - 32px)}
 .card.wide{max-width:680px}
-.card h2{font:800 26px/1.05 var(--display);text-transform:uppercase;letter-spacing:.03em;margin:0}
+.card h2{font:800 22px/1.1 var(--display);text-transform:uppercase;letter-spacing:.5px;margin:0}
 .card p{margin:0;color:var(--muted)}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 input{flex:1;min-width:0;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
@@ -147,7 +155,7 @@ li .pos{color:var(--muted);font-size:14px;width:1.6em}
 .meter.warn>i{background:var(--warn)}.meter.bad>i{background:var(--bad)}
 dialog{background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:12px;padding:20px;max-width:min(440px,calc(100% - 32px))}
 dialog::backdrop{background:rgb(0 0 0 / .6)}
-dialog h2{font:800 24px/1.1 var(--display);text-transform:uppercase;margin:0 0 10px}
+dialog h2{font:800 20px/1.2 var(--display);text-transform:uppercase;letter-spacing:.5px;margin:0 0 10px}
 dialog p{margin:0 0 16px;color:var(--muted)}
 [hidden]{display:none!important}
 @media (max-width:600px){
