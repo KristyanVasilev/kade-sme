@@ -744,7 +744,7 @@ function render(){
       // frame the pins in the part of the map above the results card, with room around them,
       // and never closer than country level so you can still see where it was
       if(view!==lastView)setTimeout(()=>{
-        const ch=card.getBoundingClientRect().height, MAXZ=5;
+        const mh=$("map").clientHeight, ch=Math.min(card.getBoundingClientRect().height,mh-260), MAXZ=5;   // keep >=~180px for the pins
         gmap.fitBounds(b,{top:90,left:90,right:90,bottom:ch+70});
         google.maps.event.addListenerOnce(gmap,"idle",()=>{
           if(gmap.getZoom()<=MAXZ)return;
