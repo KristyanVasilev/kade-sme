@@ -741,16 +741,7 @@ function render(){
       pin(truth,"#111",NAME[loc.c]||"Тук беше");
       rows.forEach(p=>{if(!p.x)return;pin(p.x,p.c,p.n);b.extend({lat:p.x[0],lng:p.x[1]});
         marks.push(new google.maps.Polyline({map:gmap,path:[{lat:p.x[0],lng:p.x[1]},{lat:truth[0],lng:truth[1]}],geodesic:true,strokeColor:p.c,strokeWeight:2}));});
-      // frame the pins in the part of the map above the results card, with room around them,
-      // and never closer than country level so you can still see where it was
-      if(view!==lastView)setTimeout(()=>{
-        const ch=card.getBoundingClientRect().height, MAXZ=5;
-        gmap.fitBounds(b,{top:90,left:90,right:90,bottom:ch+70});
-        google.maps.event.addListenerOnce(gmap,"idle",()=>{
-          if(gmap.getZoom()<=MAXZ)return;
-          gmap.setZoom(MAXZ);gmap.setCenter(b.getCenter());gmap.panBy(0,ch/2);
-        });
-      },80);
+      if(view!==lastView)setTimeout(()=>gmap.fitBounds(b,60),50);
     }
     const av=p=>el("span",{class:"av",style:"background:"+p.c,text:(p.n.trim()[0]||"?").toUpperCase()});
     const a2=A2[loc.c];
