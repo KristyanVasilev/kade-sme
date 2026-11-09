@@ -61,6 +61,9 @@ body.home header{border-bottom-color:transparent}
 .prow{padding:10px 12px;border-radius:12px;background:rgb(10 12 48 / .45);border:1px solid rgb(255 255 255 / .12);gap:12px}
 .prow .nm{display:flex;flex-direction:column;white-space:normal}
 .prow .st{font-size:13px;color:var(--accent)}
+.prow .kick{margin-left:auto;flex:none;width:34px;height:34px;padding:0;border-radius:50%;font-size:14px;
+  background:rgb(255 92 122 / .14);border-color:rgb(255 92 122 / .45);color:#ff9bb0}
+.prow .kick:hover{background:rgb(255 92 122 / .3);color:#fff}
 .avatar{width:38px;height:38px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:700;color:#fff;border:2px solid rgb(255 255 255 / .85);box-shadow:0 2px 10px rgb(0 0 0 / .35)}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px 28px}
 .col{display:flex;flex-direction:column;gap:16px;min-width:0}
@@ -328,9 +331,10 @@ const inConts=(id,conts)=>!conts.length||conts.includes(CONT_OF[id]);
 function poolOf(s){const base=COUNTRIES.map(c=>c[0]).filter(id=>inConts(id,s.conts));
   const picked=s.countries.filter(id=>base.includes(id));return picked.length?picked:base;}
 
+let kicked={};
 function online(){
-  return Object.entries(players).filter(([,p])=>p&&p.on&&typeof p.n==="string"&&p.n)
-    .sort((a,b)=>(a[1].t||0)-(b[1].t||0)).slice(0,MAX)
+  return Object.entries(players).filter(([id,p])=>p&&p.on&&!kicked[id]&&typeof p.n==="string"&&p.n)
+    .sort((a,b)=>(a[1].t||9e15)-(b[1].t||9e15)).slice(0,MAX)   // no join time yet = newest
     .map(([id,p],i)=>({id,n:p.n.slice(0,20),g:p.g,me:id===pid,c:COLORS[i%COLORS.length]}));
 }
 const total=()=>state?state.rounds||5:settings.rounds;
@@ -351,6 +355,16 @@ function submit(x){if(state)roomRef.child(`players/${pid}/g/${state.id}/${state.
 
 roomRef.child("state").on("value",s=>{state=s.val();render();});
 roomRef.child("settings").on("value",s=>{settings=clean(s.val());render();});
+// The owner is whoever joined the room first and is still here; if they leave, the next one takes over.
+const ownerId=()=>{const ps=online();return ps.length?ps[0].id:null;};
+roomRef.child("kicked").on("value",s=>{kicked=s.val()||{};
+  if(joined&&kicked[pid]){leave();modal("Премахнат си от стаята","Собственикът на стаята те премахна. Можеш да създадеш нова стая или да влезеш в друга.");}
+  render();});
+async function kick(p){
+  if(ownerId()!==pid||p.id===pid)return;
+  if(!await confirmBox(`Премахване на ${p.n}`,"Играчът ще излезе от стаята и няма да може да влезе отново в нея.","Премахни"))return;
+  roomRef.update({[`kicked/${p.id}`]:true,[`players/${p.id}/on`]:false});
+}
 roomRef.child("players").on("value",s=>{players=s.val()||{};
   const ps=online();
   if(state&&!state.reveal&&state.round<total()&&ps.length&&ps.every(p=>guessOf(p,state.round)))advance(state,{reveal:true});
@@ -363,7 +377,9 @@ function join(){
   const me=roomRef.child("players/"+pid);
   onConnected=db.ref(".info/connected").on("value",s=>{if(!s.val())return;
     me.child("on").onDisconnect().set(false);
-    me.update({n:name,on:true,t:firebase.database.ServerValue.TIMESTAMP});});
+    me.update({n:name,on:true});
+    // join time is set once, so reconnecting doesn't send you to the back of the queue (or cost you ownership)
+    me.child("t").once("value").then(t=>{if(!t.exists())me.child("t").set(firebase.database.ServerValue.TIMESTAMP);});});
 }
 // Back to the start screen: leave the room (others stop seeing you) and stop re-joining on reconnect.
 function leave(){
@@ -574,7 +590,9 @@ function render(){
     view="join";
     const full=ps.length>=MAX;
     const inp=el("input",{id:"name",maxlength:"20",placeholder:"Твоето име",autocomplete:"off"});inp.value=typed;
-    const go=()=>{const v=inp.value.trim();if(!v)return inp.focus();name=v;store.set("kade-name",v);join();render();usageWarn();};
+    const go=()=>{const v=inp.value.trim();if(!v)return inp.focus();
+      if(kicked[pid])return modal("Премахнат си от тази стая","Собственикът на стаята те премахна. Отвори нов линк, за да създадеш своя стая.");
+      name=v;store.set("kade-name",v);join();render();usageWarn();};
     inp.addEventListener("keydown",e=>e.key==="Enter"&&go());
     card.classList.add("hero");
     card.append(el("div",{class:"hero-text"},
@@ -598,7 +616,9 @@ function render(){
     }else card.append(head("Чакалня","Прати линка на приятелите си. Настройките са общи за стаята: всеки може да ги смени."),
       el("ul",{class:"prows"},...ps.map((p,i)=>el("li",{class:"prow"},
         el("span",{class:"avatar",style:"background:"+p.c,text:(p.n.trim()[0]||"?").toUpperCase()}),
-        el("span",{class:"nm"},el("b",{text:`${i+1}. ${p.n}${p.me?" (ти)":""}`}),el("span",{class:"st",text:"в стаята · готов"}))))));
+        el("span",{class:"nm"},el("b",{text:`${i+1}. ${p.n}${p.me?" (ти)":""}`}),
+          el("span",{class:"st",text:p.id===ownerId()?"👑 собственик на стаята":"в стаята · готов"})),
+        ownerId()===pid&&!p.me?el("button",{class:"kick",title:"Премахни от стаята","aria-label":`Премахни ${p.n} от стаята`,text:"✕",on:()=>kick(p)}):""))));
     const s=settings, pool=poolOf(s);
     const ctryOpts=COUNTRIES.filter(c=>inConts(c[0],s.conts)).sort((a,b)=>a[1].localeCompare(b[1],"bg")).map(c=>[c[0],c[1]]);
     card.append(el("div",{class:"cols"},
