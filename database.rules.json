@@ -4,13 +4,64 @@
     ".write": false,
     "rooms": {
       "$room": {
-        ".read": true,
-        ".write": true,
+        ".read": "$room.matches(/^[A-Z0-9]{4,8}$/) || $room.matches(/^_u[0-9]{6}$/)",
+        ".write": "$room.matches(/^[A-Z0-9]{4,8}$/) || $room.matches(/^_u[0-9]{6}$/)",
+        "sv": { ".validate": "$room.matches(/^_u/) && newData.isNumber() && newData.val() >= 0 && newData.val() < 1000000" },
+        "maps": { ".validate": "$room.matches(/^_u/) && newData.isNumber() && newData.val() >= 0 && newData.val() < 1000000" },
+        "state": {
+          ".validate": "$room.matches(/^[A-Z0-9]/) && newData.hasChildren(['id', 'round'])",
+          "id": { ".validate": "newData.isNumber()" },
+          "round": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10" },
+          "reveal": { ".validate": "newData.isBoolean()" },
+          "rounds": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 10" },
+          "timer": { ".validate": "newData.isNumber() && newData.val() >= 10 && newData.val() <= 600" },
+          "diff": { ".validate": "newData.isString() && newData.val().length <= 10" },
+          "endsAt": { ".validate": "newData.isNumber()" },
+          "locs": {
+            "$i": {
+              ".validate": "$i.matches(/^[0-9]$/) && newData.hasChildren(['p', 'lat', 'lng'])",
+              "p": { ".validate": "newData.isString() && newData.val().length <= 200" },
+              "lat": { ".validate": "newData.isNumber()" },
+              "lng": { ".validate": "newData.isNumber()" },
+              "c": { ".validate": "newData.isString() && newData.val().length <= 3" },
+              "$other": { ".validate": false }
+            }
+          },
+          "$other": { ".validate": false }
+        },
+        "settings": {
+          ".validate": "$room.matches(/^[A-Z0-9]/)",
+          "rounds": { ".validate": "newData.isNumber()" },
+          "timer": { ".validate": "newData.isNumber()" },
+          "diff": { ".validate": "newData.isString() && newData.val().length <= 10" },
+          "conts": { "$i": { ".validate": "$i.matches(/^[0-9]$/) && newData.isString() && newData.val().length <= 2" } },
+          "countries": { "$i": { ".validate": "$i.matches(/^[0-9]{1,2}$/) && newData.isString() && newData.val().length <= 3" } },
+          "$other": { ".validate": false }
+        },
         "players": {
           "$pid": {
-            "n": { ".validate": "newData.isString() && newData.val().length <= 20" }
+            ".validate": "$room.matches(/^[A-Z0-9]/) && $pid.matches(/^[a-z0-9]{1,16}$/)",
+            "n": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20" },
+            "on": { ".validate": "newData.isBoolean()" },
+            "t": { ".validate": "newData.isNumber()" },
+            "g": {
+              "$gid": {
+                ".validate": "$gid.matches(/^[0-9]{10,16}$/)",
+                "$r": {
+                  ".validate": "$r.matches(/^[0-9]$/) && newData.hasChildren(['0', '1'])",
+                  "0": { ".validate": "newData.isNumber()" },
+                  "1": { ".validate": "newData.isNumber()" },
+                  "$other": { ".validate": false }
+                }
+              }
+            },
+            "$other": { ".validate": false }
           }
-        }
+        },
+        "kicked": {
+          "$pid": { ".validate": "$room.matches(/^[A-Z0-9]/) && $pid.matches(/^[a-z0-9]{1,16}$/) && newData.isBoolean()" }
+        },
+        "$other": { ".validate": false }
       }
     }
   }
